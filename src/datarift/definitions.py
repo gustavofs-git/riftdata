@@ -56,6 +56,7 @@ from datarift.silver_timeline import (
     transform_match_timeline_frames,
     transform_match_timeline_participant_frames,
 )
+from datarift.gold_matchup import transform_matchup_detail, write_gold
 
 
 def _get_run_id(context: AssetExecutionContext) -> str:
@@ -447,6 +448,48 @@ def silver_accounts(context: AssetExecutionContext) -> MaterializeResult:
 
 
 # ---------------------------------------------------------------------------
+# Gold assets
+# ---------------------------------------------------------------------------
+
+
+@asset(deps=[silver_match_participants], group_name="gold")
+def gold_matchup_detail(context: AssetExecutionContext) -> MaterializeResult:
+    """Gold matchup_detail table — one row per match × lane with champion-vs-champion stats."""
+    import structlog
+
+    configure_logging(_get_run_id(context), "gold_matchup_detail")
+    log = structlog.get_logger()
+
+    silver_path = "data/silver/match_participants"
+    if not DeltaTable.is_deltatable(silver_path):
+        return MaterializeResult(metadata={"rows": 0, "skipped": True})
+
+    t0 = time.monotonic()
+    participants = pl.scan_delta(silver_path).collect()
+    transformed = transform_matchup_detail(participants)
+    row_count = len(transformed)
+
+    filtered_rows = len(participants) - len(
+        participants.filter(
+            pl.col("team_position").is_not_null() & (pl.col("team_position") != "")
+        )
+    )
+
+    if row_count > 0:
+        write_gold(transformed, "data/gold/matchup_detail")
+
+    wall_time = round(time.monotonic() - t0, 2)
+
+    return MaterializeResult(
+        metadata={
+            "rows": row_count,
+            "filtered_rows": filtered_rows,
+            "total_wall_time": wall_time,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # Jobs — in-process executor avoids OOM from parallel Silver materializations
 # ---------------------------------------------------------------------------
 
@@ -483,6 +526,8 @@ defs = Definitions(
         silver_league_entries,
         silver_summoners,
         silver_accounts,
+        # Gold
+        gold_matchup_detail,
     ],
     jobs=[all_assets_job],
     executor=in_process_executor,

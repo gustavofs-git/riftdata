@@ -11,6 +11,7 @@ from pathlib import Path
 import polars as pl
 
 from datarift.bronze_writer import BronzeWriter
+from datarift.gold_matchup import transform_matchup_detail, write_gold
 from datarift.silver_league import materialize_silver_league
 from datarift.silver_match import materialize_silver_matches
 from datarift.silver_timeline import materialize_silver_timelines
@@ -20,7 +21,7 @@ SMOKE_DIR = Path(__file__).resolve().parent.parent / "data" / "_smoke"
 
 # Bronze table configs: (fixture_file, table_name, primary_key_col, endpoint)
 BRONZE_TABLES = [
-    ("match_details.json", "match_details_raw", "match_id", "/lol/match/v5/matches"),
+    ("match_details_10p.json", "match_details_raw", "match_id", "/lol/match/v5/matches"),
     ("match_timelines.json", "match_timelines_raw", "match_id", "/lol/match/v5/matches/by-match/timeline"),
     ("league_entries.json", "league_entries_raw", "puuid", "/lol/league/v4/entries"),
     ("summoners.json", "summoners_raw", "puuid", "/lol/summoner/v4/summoners"),
@@ -45,7 +46,7 @@ EXPECTED_SILVER_TABLES = [
 
 def _primary_key_for_fixture(fixture_file: str, record: dict) -> str:
     """Extract the primary key value from a raw fixture record for match_details/timelines."""
-    if fixture_file in ("match_details.json", "match_timelines.json"):
+    if fixture_file in ("match_details.json", "match_details_10p.json", "match_timelines.json"):
         return record["metadata"]["matchId"]
     return record["puuid"]
 
@@ -96,8 +97,34 @@ def verify_silver(silver_path: str) -> dict[str, int]:
     return result
 
 
+EXPECTED_GOLD_TABLES = ["matchup_detail"]
+
+
+def run_gold(silver_path: str, gold_path: str) -> dict[str, int]:
+    """Run Gold transforms on Silver data and return table→row-count map."""
+    participants = pl.read_delta(f"{silver_path}/match_participants")
+    transformed = transform_matchup_detail(participants)
+    row_count = len(transformed)
+    if row_count > 0:
+        write_gold(transformed, f"{gold_path}/matchup_detail")
+    return {"matchup_detail": row_count}
+
+
+def verify_gold(gold_path: str) -> dict[str, int]:
+    """Assert all Gold tables exist with >0 rows. Returns table→row-count map."""
+    result: dict[str, int] = {}
+    for table_name in EXPECTED_GOLD_TABLES:
+        table_path = f"{gold_path}/{table_name}"
+        df = pl.read_delta(table_path)
+        row_count = len(df)
+        if row_count == 0:
+            raise AssertionError(f"Gold table {table_name} has 0 rows")
+        result[table_name] = row_count
+    return result
+
+
 def run_smoke(smoke_dir: Path | None = None) -> dict[str, int]:
-    """Full smoke run: clean up, seed Bronze, run Silver, verify. Returns table→row-count."""
+    """Full smoke run: clean up, seed Bronze, run Silver, run Gold, verify. Returns table→row-count."""
     if smoke_dir is None:
         smoke_dir = SMOKE_DIR
 
@@ -107,20 +134,26 @@ def run_smoke(smoke_dir: Path | None = None) -> dict[str, int]:
 
     bronze_path = str(smoke_dir / "bronze")
     silver_path = str(smoke_dir / "silver")
+    gold_path = str(smoke_dir / "gold")
 
     seed_bronze(bronze_path)
     run_silver(bronze_path, silver_path)
-    return verify_silver(silver_path)
+    silver_result = verify_silver(silver_path)
+    run_gold(silver_path, gold_path)
+    gold_result = verify_gold(gold_path)
+    return {**silver_result, **gold_result}
 
 
 def main() -> None:
     start = time.monotonic()
-    print("Smoke test: seeding Bronze from fixtures and running Silver transforms...")
+    print("Smoke test: seeding Bronze from fixtures, running Silver and Gold transforms...")
 
     result = run_smoke()
 
     elapsed = time.monotonic() - start
-    print(f"\nAll {len(result)} Silver tables verified ({elapsed:.1f}s):")
+    silver_count = len(EXPECTED_SILVER_TABLES)
+    gold_count = len(EXPECTED_GOLD_TABLES)
+    print(f"\nAll {silver_count} Silver + {gold_count} Gold tables verified ({elapsed:.1f}s):")
     for table_name, row_count in sorted(result.items()):
         print(f"  {table_name}: {row_count} rows")
 
