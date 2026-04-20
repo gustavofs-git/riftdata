@@ -7,3 +7,19 @@ services:
       - ./data:/app/data
     env_file: .env
     stop_signal: SIGINT
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: datarift
+      POSTGRES_PASSWORD: datarift
+      POSTGRES_DB: datarift
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
