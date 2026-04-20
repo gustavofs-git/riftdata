@@ -241,3 +241,113 @@ def transform_matchup_intervals(
         )
 
     return result
+
+
+def transform_matchup_aggregates(
+    matchup_detail: pl.DataFrame,
+    matchup_intervals: pl.DataFrame,
+    matches: pl.DataFrame,
+    match_participants: pl.DataFrame,
+    league_entries: pl.DataFrame,
+    *,
+    min_sample_size: int = 1,
+) -> pl.DataFrame:
+    """Aggregate matchup stats per (champion pair, lane, interval, patch, tier).
+
+    Joins Gold matchup data with Silver metadata to produce averaged statistics
+    grouped by champion matchup, lane, time interval, game patch, and rank tier.
+    """
+    if matchup_detail.is_empty():
+        return pl.DataFrame()
+
+    patch_df = matches.select(
+        "match_id",
+        pl.col("game_version")
+        .str.split(".")
+        .list.slice(0, 2)
+        .list.join(".")
+        .alias("patch"),
+    )
+
+    participants_with_tier = match_participants.select("match_id", "puuid").join(
+        league_entries.select("puuid", "tier"),
+        on="puuid",
+        how="left",
+    ).with_columns(pl.col("tier").fill_null("UNKNOWN"))
+
+    modal_tier = (
+        participants_with_tier.group_by("match_id", "tier")
+        .agg(pl.len().alias("cnt"))
+        .sort("cnt", descending=True)
+        .group_by("match_id")
+        .first()
+        .select("match_id", "tier")
+    )
+
+    detail_with_meta = matchup_detail.join(patch_df, on="match_id", how="left").join(
+        modal_tier, on="match_id", how="left"
+    ).with_columns(
+        pl.col("patch").fill_null("UNKNOWN"),
+        pl.col("tier").fill_null("UNKNOWN"),
+    )
+
+    detail_stat_cols_a = [f"{s}_a" for s in _STAT_COLS]
+    detail_stat_cols_b = [f"{s}_b" for s in _STAT_COLS]
+
+    interval_stat_cols_a = [f"{s}_a" for s in _INTERVAL_STAT_COLS]
+    interval_stat_cols_b = [f"{s}_b" for s in _INTERVAL_STAT_COLS]
+
+    if matchup_intervals.is_empty():
+        combined = detail_with_meta.with_columns(
+            pl.lit(None, dtype=pl.Int64).alias("interval_min"),
+            *[pl.lit(None, dtype=pl.Float64).alias(c) for c in interval_stat_cols_a + interval_stat_cols_b],
+        )
+    else:
+        intervals_with_meta = matchup_intervals.join(
+            patch_df, on="match_id", how="left"
+        ).join(modal_tier, on="match_id", how="left").with_columns(
+            pl.col("patch").fill_null("UNKNOWN"),
+            pl.col("tier").fill_null("UNKNOWN"),
+        )
+
+        detail_interval_cols = [
+            "match_id", "champion_a_id", "champion_a_name",
+            "champion_b_id", "champion_b_name", "lane",
+            "interval_min", "patch", "tier",
+        ] + interval_stat_cols_a + interval_stat_cols_b
+
+        interval_select = intervals_with_meta.select(detail_interval_cols)
+
+        combined = detail_with_meta.join(
+            interval_select,
+            on=["match_id", "champion_a_id", "champion_b_id", "lane", "patch", "tier"],
+            how="left",
+        )
+
+    group_keys = [
+        "champion_a_id", "champion_a_name",
+        "champion_b_id", "champion_b_name",
+        "lane", "interval_min", "patch", "tier",
+    ]
+
+    all_stat_cols = detail_stat_cols_a + detail_stat_cols_b + interval_stat_cols_a + interval_stat_cols_b
+    present_stat_cols = [c for c in all_stat_cols if c in combined.columns]
+
+    agg_exprs = [
+        pl.col(c).cast(pl.Float64).mean().alias(f"avg_{c}") for c in present_stat_cols
+    ] + [
+        pl.col("win_a").cast(pl.Float64).mean().alias("win_rate_a"),
+        pl.len().alias("sample_size"),
+    ]
+
+    result = combined.group_by(group_keys).agg(agg_exprs)
+
+    result = result.filter(pl.col("sample_size") >= min_sample_size)
+
+    log.info(
+        "matchup_aggregates_produced",
+        rows=len(result),
+        groups=len(result.columns),
+    )
+
+    return result
