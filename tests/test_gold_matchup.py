@@ -1,4 +1,4 @@
-"""Unit tests for Gold matchup_detail and matchup_intervals transforms."""
+"""Unit tests for Gold matchup_detail, matchup_intervals, and matchup_aggregates transforms."""
 
 from __future__ import annotations
 
@@ -8,8 +8,13 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from datarift.gold_matchup import transform_matchup_detail, transform_matchup_intervals
-from datarift.silver_match import transform_match_participants
+from datarift.gold_matchup import (
+    transform_matchup_aggregates,
+    transform_matchup_detail,
+    transform_matchup_intervals,
+)
+from datarift.silver_league import transform_league_entries
+from datarift.silver_match import transform_match_participants, transform_matches
 from datarift.silver_timeline import (
     transform_match_timeline_frames,
     transform_match_timeline_participant_frames,
@@ -17,6 +22,7 @@ from datarift.silver_timeline import (
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "match_details_10p.json"
 TIMELINE_FIXTURE_PATH = Path(__file__).parent / "fixtures" / "match_timelines.json"
+LEAGUE_FIXTURE_PATH = Path(__file__).parent / "fixtures" / "league_entries.json"
 
 
 @pytest.fixture()
@@ -232,3 +238,120 @@ def test_matchup_intervals_empty_input() -> None:
         "jungle_minions_killed_a", "jungle_minions_killed_b",
         "current_gold_a", "current_gold_b",
     }
+
+
+# ---------------------------------------------------------------------------
+# Fixtures for matchup_aggregates tests
+# ---------------------------------------------------------------------------
+
+
+def _build_league_bronze() -> pl.DataFrame:
+    raw = json.loads(LEAGUE_FIXTURE_PATH.read_text())
+    return pl.DataFrame([{"raw_json": json.dumps(e)} for e in raw])
+
+
+@pytest.fixture()
+def aggregate_result(silver_participants: pl.DataFrame) -> pl.DataFrame:
+    det_bronze = _build_bronze_df(FIXTURE_PATH)
+    tl_bronze = _build_bronze_df(TIMELINE_FIXTURE_PATH)
+    le_bronze = _build_league_bronze()
+
+    matches = transform_matches(det_bronze)
+    league_entries = transform_league_entries(le_bronze)
+    timeline_frames = transform_match_timeline_frames(tl_bronze)
+    participant_frames = transform_match_timeline_participant_frames(tl_bronze)
+
+    matchup_detail = transform_matchup_detail(silver_participants)
+    matchup_intervals = transform_matchup_intervals(
+        matchup_detail, silver_participants, timeline_frames, participant_frames,
+    )
+    return transform_matchup_aggregates(
+        matchup_detail, matchup_intervals, matches, silver_participants, league_entries,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Matchup aggregates tests
+# ---------------------------------------------------------------------------
+
+
+def test_aggregate_row_count(aggregate_result: pl.DataFrame) -> None:
+    assert len(aggregate_result) == 40, (
+        f"Expected 40 rows (10 unique matchups × 4 intervals), got {len(aggregate_result)}"
+    )
+
+
+def test_aggregate_columns(aggregate_result: pl.DataFrame) -> None:
+    expected = {
+        "champion_a_id", "champion_a_name",
+        "champion_b_id", "champion_b_name",
+        "lane", "interval_min", "patch", "tier",
+        "win_rate_a", "sample_size",
+    }
+    assert expected.issubset(set(aggregate_result.columns)), (
+        f"Missing columns: {expected - set(aggregate_result.columns)}"
+    )
+    avg_cols = [c for c in aggregate_result.columns if c.startswith("avg_")]
+    assert len(avg_cols) > 0, "Expected avg_* stat columns"
+
+
+def test_aggregate_patch_extraction(aggregate_result: pl.DataFrame) -> None:
+    patches = aggregate_result["patch"].unique().to_list()
+    assert patches == ["16.6"], f"Expected patch '16.6', got {patches}"
+
+
+def test_aggregate_tier_includes_unknown(aggregate_result: pl.DataFrame) -> None:
+    tiers = set(aggregate_result["tier"].unique().to_list())
+    assert "UNKNOWN" in tiers, f"Expected UNKNOWN tier for participants not in league_entries, got {tiers}"
+
+
+def test_aggregate_win_rate(aggregate_result: pl.DataFrame) -> None:
+    garen_jax = aggregate_result.filter(
+        (pl.col("champion_a_name") == "Garen")
+        & (pl.col("champion_b_name") == "Jax")
+        & (pl.col("interval_min") == 5)
+    )
+    assert len(garen_jax) == 1
+    row = garen_jax.to_dicts()[0]
+    assert row["win_rate_a"] == 1.0, "Garen won the only match vs Jax"
+    assert row["sample_size"] == 1
+
+
+def test_aggregate_min_sample_filter(silver_participants: pl.DataFrame) -> None:
+    det_bronze = _build_bronze_df(FIXTURE_PATH)
+    tl_bronze = _build_bronze_df(TIMELINE_FIXTURE_PATH)
+    le_bronze = _build_league_bronze()
+
+    matches = transform_matches(det_bronze)
+    league_entries = transform_league_entries(le_bronze)
+    timeline_frames = transform_match_timeline_frames(tl_bronze)
+    participant_frames = transform_match_timeline_participant_frames(tl_bronze)
+
+    matchup_detail = transform_matchup_detail(silver_participants)
+    matchup_intervals = transform_matchup_intervals(
+        matchup_detail, silver_participants, timeline_frames, participant_frames,
+    )
+    result = transform_matchup_aggregates(
+        matchup_detail, matchup_intervals, matches, silver_participants, league_entries,
+        min_sample_size=999,
+    )
+    assert len(result) == 0, "All matchups have sample_size=1, so min_sample_size=999 should filter everything"
+
+
+def test_aggregate_missing_tier_fallback(aggregate_result: pl.DataFrame) -> None:
+    tiers = set(aggregate_result["tier"].unique().to_list())
+    assert "UNKNOWN" in tiers, (
+        "Participants without league entries should produce UNKNOWN tier"
+    )
+
+
+def test_aggregate_empty_input() -> None:
+    empty_detail = pl.DataFrame()
+    empty_intervals = pl.DataFrame()
+    matches = pl.DataFrame({"match_id": [], "game_version": []})
+    participants = pl.DataFrame({"match_id": [], "puuid": []})
+    league = pl.DataFrame({"puuid": [], "tier": []})
+    result = transform_matchup_aggregates(
+        empty_detail, empty_intervals, matches, participants, league,
+    )
+    assert len(result) == 0
