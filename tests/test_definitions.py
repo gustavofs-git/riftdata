@@ -14,9 +14,17 @@ from datarift.definitions import (
     bronze_match_details,
     bronze_match_timelines,
     defs,
-    silver_league,
+    silver_accounts,
+    silver_league_entries,
+    silver_match_participants,
+    silver_match_teams,
+    silver_match_teams_bans,
+    silver_match_teams_objectives,
+    silver_match_timeline_events,
+    silver_match_timeline_frames,
+    silver_match_timeline_participant_frames,
     silver_matches,
-    silver_timelines,
+    silver_summoners,
 )
 
 
@@ -35,8 +43,16 @@ _BRONZE_ASSETS = {
 
 _SILVER_ASSETS = {
     "silver_matches",
-    "silver_timelines",
-    "silver_league",
+    "silver_match_participants",
+    "silver_match_teams",
+    "silver_match_teams_bans",
+    "silver_match_teams_objectives",
+    "silver_match_timeline_frames",
+    "silver_match_timeline_participant_frames",
+    "silver_match_timeline_events",
+    "silver_league_entries",
+    "silver_summoners",
+    "silver_accounts",
 }
 
 
@@ -62,21 +78,47 @@ def test_bronze_dependency_chain():
         assert "bronze_match_ids" in parent_keys, f"{name} should depend on bronze_match_ids"
 
 
-def test_silver_dependencies():
-    """Silver assets depend on the correct Bronze assets."""
+def test_silver_match_detail_dependencies():
+    """All match-detail Silver assets depend on bronze_match_details."""
+    graph = defs.resolve_asset_graph()
+    for name in (
+        "silver_matches",
+        "silver_match_participants",
+        "silver_match_teams",
+        "silver_match_teams_bans",
+        "silver_match_teams_objectives",
+    ):
+        node = graph.get(AssetKey(name))
+        parent_keys = {k.to_user_string() for k in node.parent_keys}
+        assert "bronze_match_details" in parent_keys, f"{name} should depend on bronze_match_details"
+
+
+def test_silver_timeline_dependencies():
+    """All timeline Silver assets depend on bronze_match_timelines."""
+    graph = defs.resolve_asset_graph()
+    for name in (
+        "silver_match_timeline_frames",
+        "silver_match_timeline_participant_frames",
+        "silver_match_timeline_events",
+    ):
+        node = graph.get(AssetKey(name))
+        parent_keys = {k.to_user_string() for k in node.parent_keys}
+        assert "bronze_match_timelines" in parent_keys, f"{name} should depend on bronze_match_timelines"
+
+
+def test_silver_entity_dependencies():
+    """Each entity Silver asset depends on its own Bronze asset."""
     graph = defs.resolve_asset_graph()
 
-    node = graph.get(AssetKey("silver_matches"))
-    assert "bronze_match_details" in {k.to_user_string() for k in node.parent_keys}
-
-    node = graph.get(AssetKey("silver_timelines"))
-    assert "bronze_match_timelines" in {k.to_user_string() for k in node.parent_keys}
-
-    node = graph.get(AssetKey("silver_league"))
-    parent_keys = {k.to_user_string() for k in node.parent_keys}
-    assert "bronze_league_entries" in parent_keys
-    assert "bronze_summoners" in parent_keys
-    assert "bronze_accounts" in parent_keys
+    cases = [
+        ("silver_league_entries", "bronze_league_entries"),
+        ("silver_summoners", "bronze_summoners"),
+        ("silver_accounts", "bronze_accounts"),
+    ]
+    for silver_name, bronze_name in cases:
+        node = graph.get(AssetKey(silver_name))
+        parent_keys = {k.to_user_string() for k in node.parent_keys}
+        assert bronze_name in parent_keys, f"{silver_name} should depend on {bronze_name}"
 
 
 # ---------------------------------------------------------------------------
@@ -151,35 +193,48 @@ def test_bronze_match_ids_metadata(mock_config, mock_read_puuids, mock_extract, 
 # ---------------------------------------------------------------------------
 
 
-@patch("datarift.definitions.materialize_silver_matches")
-def test_silver_matches_metadata(mock_mat):
-    mock_mat.return_value = {"match_details": 100, "match_events": 500}
+def _empty_bronze_arrow():
+    """Return an empty Arrow table with raw_json typed as Utf8 (not Null)."""
+    import polars as pl
+    return pl.DataFrame({"raw_json": pl.Series([], dtype=pl.Utf8)}).to_arrow()
+
+
+@patch("datarift.definitions.write_silver")
+@patch("datarift.definitions.DeltaTable")
+def test_silver_matches_metadata(mock_dt_cls, mock_write):
+    mock_dt_cls.is_deltatable.return_value = True
+    mock_dt = MagicMock()
+    mock_dt.to_pyarrow_table.return_value = _empty_bronze_arrow()
+    mock_dt_cls.return_value = mock_dt
 
     context = build_asset_context()
     result = silver_matches(context)
 
-    assert result.metadata["match_details"] == 100
-    assert result.metadata["match_events"] == 500
+    assert "rows" in result.metadata
     assert "total_wall_time" in result.metadata
 
 
-@patch("datarift.definitions.materialize_silver_timelines")
-def test_silver_timelines_metadata(mock_mat):
-    mock_mat.return_value = {"participant_frames": 200}
+@patch("datarift.definitions.write_silver")
+@patch("datarift.definitions.DeltaTable")
+def test_silver_league_entries_metadata(mock_dt_cls, mock_write):
+    mock_dt_cls.is_deltatable.return_value = True
+    mock_dt = MagicMock()
+    mock_dt.to_pyarrow_table.return_value = _empty_bronze_arrow()
+    mock_dt_cls.return_value = mock_dt
 
     context = build_asset_context()
-    result = silver_timelines(context)
+    result = silver_league_entries(context)
 
-    assert result.metadata["participant_frames"] == 200
+    assert "rows" in result.metadata
     assert "total_wall_time" in result.metadata
 
 
-@patch("datarift.definitions.materialize_silver_league")
-def test_silver_league_metadata(mock_mat):
-    mock_mat.return_value = {"league_entries": 50, "summoners": 30, "accounts": 30}
+@patch("datarift.definitions.DeltaTable")
+def test_silver_skips_missing_bronze(mock_dt_cls):
+    mock_dt_cls.is_deltatable.return_value = False
 
     context = build_asset_context()
-    result = silver_league(context)
+    result = silver_accounts(context)
 
-    assert result.metadata["league_entries"] == 50
-    assert "total_wall_time" in result.metadata
+    assert result.metadata["rows"] == 0
+    assert result.metadata["skipped"] is True

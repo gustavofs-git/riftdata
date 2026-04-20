@@ -72,11 +72,19 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. The asset g
 5. **bronze_match_details** — match detail data from Match-V5 (depends on match IDs)
 6. **bronze_match_timelines** — match timeline data from Match-V5 (depends on match IDs)
 
-**Silver assets** (transform Bronze into normalized tables):
+**Silver assets** (one per table, transform Bronze into normalized tables):
 
-7. **silver_matches** — match, participant, team tables (depends on match details)
-8. **silver_timelines** — timeline frame and event tables (depends on match timelines)
-9. **silver_league** — league entry, summoner, account tables (depends on league entries + accounts + summoners)
+7. **silver_matches** — match-level metadata and game info (depends on match details)
+8. **silver_match_participants** — one row per match × participant (depends on match details)
+9. **silver_match_teams** — one row per match × team (depends on match details)
+10. **silver_match_teams_bans** — one row per match × team × ban (depends on match details)
+11. **silver_match_teams_objectives** — one row per match × team × objective (depends on match details)
+12. **silver_match_timeline_frames** — one row per match × frame (depends on match timelines)
+13. **silver_match_timeline_participant_frames** — one row per match × frame × participant (depends on match timelines)
+14. **silver_match_timeline_events** — one row per match × frame × event (depends on match timelines)
+15. **silver_league_entries** — tier, rank, LP per puuid (depends on league entries)
+16. **silver_summoners** — summoner profiles (depends on summoners)
+17. **silver_accounts** — game name and tag (depends on accounts)
 
 Each asset logs human-readable progress to the Dagster UI — you can see which API endpoint is being called, how many records have been processed, and batch-level progress (e.g., `150/2000`).
 
@@ -118,7 +126,7 @@ datarift/
 ├── scripts/
 │   └── smoke.py                 # Smoke test — Bronze fixtures → Silver transforms
 ├── src/datarift/
-│   ├── definitions.py           # Dagster asset definitions (9 assets, entrypoint)
+│   ├── definitions.py           # Dagster asset definitions (17 assets, entrypoint)
 │   ├── config.py                # ExtractionConfig model + 16 region mappings
 │   ├── runner.py                # Standalone async extraction orchestrator (all-in-one)
 │   ├── extractors.py            # Riot API data extractors (one per entity)

@@ -36,9 +36,24 @@ from datarift.extractors import (
 )
 from datarift.logging import configure_logging
 from datarift.riot_client import RiotRateLimiter
-from datarift.silver_league import materialize_silver_league
-from datarift.silver_match import materialize_silver_matches
-from datarift.silver_timeline import materialize_silver_timelines
+from datarift.silver_league import (
+    transform_accounts,
+    transform_league_entries,
+    transform_summoners,
+)
+from datarift.silver_match import (
+    transform_match_participants,
+    transform_match_teams,
+    transform_match_teams_bans,
+    transform_match_teams_objectives,
+    transform_matches,
+    write_silver,
+)
+from datarift.silver_timeline import (
+    transform_match_timeline_events,
+    transform_match_timeline_frames,
+    transform_match_timeline_participant_frames,
+)
 
 
 def _get_run_id(context: AssetExecutionContext) -> str:
@@ -238,58 +253,151 @@ def bronze_match_timelines(context: AssetExecutionContext) -> MaterializeResult:
 
 
 # ---------------------------------------------------------------------------
-# Silver assets
+# Silver assets — one per table
 # ---------------------------------------------------------------------------
 
 
-@asset(
-    deps=[bronze_match_details],
-    group_name="silver",
-)
+def _materialize_silver(
+    context: AssetExecutionContext,
+    asset_name: str,
+    bronze_table: str,
+    silver_table: str,
+    transform,
+    predicate: str,
+) -> MaterializeResult:
+    """Shared helper: read one Bronze table, transform, write one Silver table."""
+    configure_logging(_get_run_id(context), asset_name)
+
+    bronze_path = f"data/bronze/{bronze_table}"
+    if not DeltaTable.is_deltatable(bronze_path):
+        return MaterializeResult(metadata={"rows": 0, "skipped": True})
+
+    t0 = time.monotonic()
+    dt = DeltaTable(bronze_path)
+    raw_df = pl.DataFrame(dt.to_pyarrow_table())
+    transformed = transform(raw_df)
+    row_count = len(transformed)
+
+    silver_path = f"data/silver/{silver_table}"
+    write_silver(transformed, silver_path, predicate)
+    wall_time = round(time.monotonic() - t0, 2)
+
+    return MaterializeResult(
+        metadata={"rows": row_count, "total_wall_time": wall_time},
+    )
+
+
+# --- Match-detail Silver tables (from bronze_match_details) ---
+
+
+@asset(deps=[bronze_match_details], group_name="silver")
 def silver_matches(context: AssetExecutionContext) -> MaterializeResult:
-    """Transform Bronze match data into Silver match tables."""
-    configure_logging(_get_run_id(context), "silver_matches")
-
-    t0 = time.monotonic()
-    row_counts = materialize_silver_matches("data/bronze", "data/silver")
-    wall_time = round(time.monotonic() - t0, 2)
-
-    return MaterializeResult(
-        metadata={**row_counts, "total_wall_time": wall_time},
+    """Silver matches table — one row per match with metadata and game info."""
+    return _materialize_silver(
+        context, "silver_matches", "match_details_raw", "matches",
+        transform_matches, "s.match_id = t.match_id",
     )
 
 
-@asset(
-    deps=[bronze_match_timelines],
-    group_name="silver",
-)
-def silver_timelines(context: AssetExecutionContext) -> MaterializeResult:
-    """Transform Bronze match data into Silver timeline tables."""
-    configure_logging(_get_run_id(context), "silver_timelines")
-
-    t0 = time.monotonic()
-    row_counts = materialize_silver_timelines("data/bronze", "data/silver")
-    wall_time = round(time.monotonic() - t0, 2)
-
-    return MaterializeResult(
-        metadata={**row_counts, "total_wall_time": wall_time},
+@asset(deps=[bronze_match_details], group_name="silver")
+def silver_match_participants(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver match_participants table — one row per match × participant."""
+    return _materialize_silver(
+        context, "silver_match_participants", "match_details_raw", "match_participants",
+        transform_match_participants,
+        "s.match_id = t.match_id AND s.participant_id = t.participant_id",
     )
 
 
-@asset(
-    deps=[bronze_league_entries, bronze_summoners, bronze_accounts],
-    group_name="silver",
-)
-def silver_league(context: AssetExecutionContext) -> MaterializeResult:
-    """Transform Bronze league/summoner/account data into Silver tables."""
-    configure_logging(_get_run_id(context), "silver_league")
+@asset(deps=[bronze_match_details], group_name="silver")
+def silver_match_teams(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver match_teams table — one row per match × team."""
+    return _materialize_silver(
+        context, "silver_match_teams", "match_details_raw", "match_teams",
+        transform_match_teams, "s.match_id = t.match_id AND s.team_id = t.team_id",
+    )
 
-    t0 = time.monotonic()
-    row_counts = materialize_silver_league("data/bronze", "data/silver")
-    wall_time = round(time.monotonic() - t0, 2)
 
-    return MaterializeResult(
-        metadata={**row_counts, "total_wall_time": wall_time},
+@asset(deps=[bronze_match_details], group_name="silver")
+def silver_match_teams_bans(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver match_teams_bans table — one row per match × team × ban."""
+    return _materialize_silver(
+        context, "silver_match_teams_bans", "match_details_raw", "match_teams_bans",
+        transform_match_teams_bans,
+        "s.match_id = t.match_id AND s.team_id = t.team_id AND s.pick_turn = t.pick_turn",
+    )
+
+
+@asset(deps=[bronze_match_details], group_name="silver")
+def silver_match_teams_objectives(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver match_teams_objectives table — one row per match × team × objective."""
+    return _materialize_silver(
+        context, "silver_match_teams_objectives", "match_details_raw", "match_teams_objectives",
+        transform_match_teams_objectives,
+        "s.match_id = t.match_id AND s.team_id = t.team_id AND s.objective_name = t.objective_name",
+    )
+
+
+# --- Timeline Silver tables (from bronze_match_timelines) ---
+
+
+@asset(deps=[bronze_match_timelines], group_name="silver")
+def silver_match_timeline_frames(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver match_timeline_frames table — one row per match × frame."""
+    return _materialize_silver(
+        context, "silver_match_timeline_frames", "match_timelines_raw", "match_timeline_frames",
+        transform_match_timeline_frames,
+        "s.match_id = t.match_id AND s.frame_index = t.frame_index",
+    )
+
+
+@asset(deps=[bronze_match_timelines], group_name="silver")
+def silver_match_timeline_participant_frames(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver match_timeline_participant_frames table — one row per match × frame × participant."""
+    return _materialize_silver(
+        context, "silver_match_timeline_participant_frames", "match_timelines_raw",
+        "match_timeline_participant_frames", transform_match_timeline_participant_frames,
+        "s.match_id = t.match_id AND s.frame_index = t.frame_index AND s.participant_id = t.participant_id",
+    )
+
+
+@asset(deps=[bronze_match_timelines], group_name="silver")
+def silver_match_timeline_events(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver match_timeline_events table — one row per match × frame × event."""
+    return _materialize_silver(
+        context, "silver_match_timeline_events", "match_timelines_raw", "match_timeline_events",
+        transform_match_timeline_events,
+        "s.match_id = t.match_id AND s.frame_index = t.frame_index AND s.event_index = t.event_index",
+    )
+
+
+# --- League/Summoner/Account Silver tables (each from its own Bronze) ---
+
+
+@asset(deps=[bronze_league_entries], group_name="silver")
+def silver_league_entries(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver league_entries table — one row per puuid with tier, rank, LP."""
+    return _materialize_silver(
+        context, "silver_league_entries", "league_entries_raw", "league_entries",
+        transform_league_entries, "s.puuid = t.puuid",
+    )
+
+
+@asset(deps=[bronze_summoners], group_name="silver")
+def silver_summoners(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver summoners table — one row per puuid with profile info."""
+    return _materialize_silver(
+        context, "silver_summoners", "summoners_raw", "summoners",
+        transform_summoners, "s.puuid = t.puuid",
+    )
+
+
+@asset(deps=[bronze_accounts], group_name="silver")
+def silver_accounts(context: AssetExecutionContext) -> MaterializeResult:
+    """Silver accounts table — one row per puuid with game name and tag."""
+    return _materialize_silver(
+        context, "silver_accounts", "accounts_raw", "accounts",
+        transform_accounts, "s.puuid = t.puuid",
     )
 
 
@@ -306,9 +414,19 @@ defs = Definitions(
         bronze_match_ids,
         bronze_match_details,
         bronze_match_timelines,
-        # Silver
+        # Silver — match detail tables
         silver_matches,
-        silver_timelines,
-        silver_league,
+        silver_match_participants,
+        silver_match_teams,
+        silver_match_teams_bans,
+        silver_match_teams_objectives,
+        # Silver — timeline tables
+        silver_match_timeline_frames,
+        silver_match_timeline_participant_frames,
+        silver_match_timeline_events,
+        # Silver — league / summoner / account tables
+        silver_league_entries,
+        silver_summoners,
+        silver_accounts,
     ],
 )
