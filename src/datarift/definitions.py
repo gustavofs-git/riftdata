@@ -452,7 +452,11 @@ def silver_accounts(context: AssetExecutionContext) -> MaterializeResult:
 # ---------------------------------------------------------------------------
 
 
-@asset(deps=[silver_match_participants], group_name="gold")
+@asset(
+    deps=[silver_match_participants],
+    group_name="gold",
+    description="Champion-vs-champion matchup rows per match and lane, with end-of-game stats for both sides.",
+)
 def gold_matchup_detail(context: AssetExecutionContext) -> MaterializeResult:
     """Gold matchup_detail table — one row per match × lane with champion-vs-champion stats."""
     import structlog
@@ -480,13 +484,21 @@ def gold_matchup_detail(context: AssetExecutionContext) -> MaterializeResult:
 
     wall_time = round(time.monotonic() - t0, 2)
 
-    return MaterializeResult(
-        metadata={
-            "rows": row_count,
-            "filtered_rows": filtered_rows,
-            "total_wall_time": wall_time,
-        },
-    )
+    meta = {
+        "rows": row_count,
+        "filtered_rows": filtered_rows,
+        "total_wall_time": wall_time,
+    }
+    if row_count > 0:
+        meta["unique_matches"] = transformed["match_id"].n_unique()
+        all_champs = pl.concat([
+            transformed["champion_a_id"],
+            transformed["champion_b_id"],
+        ])
+        meta["unique_champions"] = all_champs.n_unique()
+        meta["lanes_covered"] = ", ".join(sorted(transformed["lane"].unique().to_list()))
+
+    return MaterializeResult(metadata=meta)
 
 
 @asset(
@@ -497,6 +509,7 @@ def gold_matchup_detail(context: AssetExecutionContext) -> MaterializeResult:
         gold_matchup_detail,
     ],
     group_name="gold",
+    description="Per-interval (5/10/15/20 min) stat snapshots for each champion matchup, with gold, XP, CS, and level for both sides.",
 )
 def gold_matchup_intervals(context: AssetExecutionContext) -> MaterializeResult:
     """Gold matchup_intervals table — per-interval (5/10/15/20 min) stat snapshots per matchup."""
@@ -534,13 +547,16 @@ def gold_matchup_intervals(context: AssetExecutionContext) -> MaterializeResult:
 
     wall_time = round(time.monotonic() - t0, 2)
 
-    return MaterializeResult(
-        metadata={
-            "rows": row_count,
-            "missing_intervals": missing_intervals,
-            "total_wall_time": wall_time,
-        },
-    )
+    meta = {
+        "rows": row_count,
+        "missing_intervals": missing_intervals,
+        "total_wall_time": wall_time,
+    }
+    if row_count > 0:
+        intervals = sorted(transformed["interval_min"].unique().to_list())
+        meta["intervals_produced"] = ", ".join(str(i) for i in intervals)
+
+    return MaterializeResult(metadata=meta)
 
 
 @asset(
@@ -552,6 +568,7 @@ def gold_matchup_intervals(context: AssetExecutionContext) -> MaterializeResult:
         silver_league_entries,
     ],
     group_name="gold",
+    description="Averaged matchup stats per (champion pair, lane, interval, patch, tier) with win rates and sample sizes.",
 )
 def gold_matchup_aggregates(context: AssetExecutionContext) -> MaterializeResult:
     """Gold matchup_aggregates table — averaged stats per (champion, opponent, lane, interval, patch, tier)."""
@@ -585,9 +602,16 @@ def gold_matchup_aggregates(context: AssetExecutionContext) -> MaterializeResult
 
     wall_time = round(time.monotonic() - t0, 2)
 
-    return MaterializeResult(
-        metadata={"rows": row_count, "total_wall_time": wall_time},
-    )
+    meta = {"rows": row_count, "total_wall_time": wall_time}
+    if row_count > 0:
+        meta["unique_champion_pairs"] = transformed.select(
+            pl.struct("champion_a_id", "champion_b_id")
+        ).n_unique()
+        meta["patches"] = ", ".join(sorted(transformed["patch"].unique().to_list()))
+        meta["tiers"] = ", ".join(sorted(transformed["tier"].unique().to_list()))
+        meta["avg_sample_size"] = round(transformed["sample_size"].mean(), 1)
+
+    return MaterializeResult(metadata=meta)
 
 
 # ---------------------------------------------------------------------------
