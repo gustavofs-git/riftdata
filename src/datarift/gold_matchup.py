@@ -42,6 +42,9 @@ def transform_matchup_detail(participants_df: pl.DataFrame) -> pl.DataFrame:
     Returns one row per (match_id, lane) with stats for both sides.
     Champion A is from team_id 100, champion B from team_id 200.
     """
+    if participants_df.is_empty() and len(participants_df.columns) == 0:
+        return pl.DataFrame()
+
     total_before = len(participants_df)
     filtered = participants_df.filter(
         pl.col("team_position").is_not_null()
