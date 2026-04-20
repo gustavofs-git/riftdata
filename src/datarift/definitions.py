@@ -56,7 +56,7 @@ from datarift.silver_timeline import (
     transform_match_timeline_frames,
     transform_match_timeline_participant_frames,
 )
-from datarift.gold_matchup import transform_matchup_detail, write_gold
+from datarift.gold_matchup import transform_matchup_detail, transform_matchup_intervals, write_gold
 
 
 def _get_run_id(context: AssetExecutionContext) -> str:
@@ -489,6 +489,60 @@ def gold_matchup_detail(context: AssetExecutionContext) -> MaterializeResult:
     )
 
 
+@asset(
+    deps=[
+        silver_match_participants,
+        silver_match_timeline_frames,
+        silver_match_timeline_participant_frames,
+        gold_matchup_detail,
+    ],
+    group_name="gold",
+)
+def gold_matchup_intervals(context: AssetExecutionContext) -> MaterializeResult:
+    """Gold matchup_intervals table — per-interval (5/10/15/20 min) stat snapshots per matchup."""
+    import structlog
+
+    configure_logging(_get_run_id(context), "gold_matchup_intervals")
+    log = structlog.get_logger()
+
+    silver_participants_path = "data/silver/match_participants"
+    silver_frames_path = "data/silver/match_timeline_frames"
+    silver_pframes_path = "data/silver/match_timeline_participant_frames"
+    gold_matchup_path = "data/gold/matchup_detail"
+
+    for path in [silver_participants_path, silver_frames_path, silver_pframes_path, gold_matchup_path]:
+        if not DeltaTable.is_deltatable(path):
+            return MaterializeResult(metadata={"rows": 0, "skipped": True})
+
+    t0 = time.monotonic()
+    matchup_detail_df = pl.scan_delta(gold_matchup_path).collect()
+    participants = pl.scan_delta(silver_participants_path).collect()
+    timeline_frames = pl.scan_delta(silver_frames_path).collect()
+    participant_frames = pl.scan_delta(silver_pframes_path).collect()
+
+    transformed = transform_matchup_intervals(
+        matchup_detail_df, participants, timeline_frames, participant_frames,
+    )
+    row_count = len(transformed)
+
+    missing_intervals = transformed.select(
+        pl.col("total_gold_a").is_null().sum()
+    ).item() if row_count > 0 else 0
+
+    if row_count > 0:
+        write_gold(transformed, "data/gold/matchup_intervals")
+
+    wall_time = round(time.monotonic() - t0, 2)
+
+    return MaterializeResult(
+        metadata={
+            "rows": row_count,
+            "missing_intervals": missing_intervals,
+            "total_wall_time": wall_time,
+        },
+    )
+
+
 # ---------------------------------------------------------------------------
 # Jobs — in-process executor avoids OOM from parallel Silver materializations
 # ---------------------------------------------------------------------------
@@ -528,6 +582,7 @@ defs = Definitions(
         silver_accounts,
         # Gold
         gold_matchup_detail,
+        gold_matchup_intervals,
     ],
     jobs=[all_assets_job],
     executor=in_process_executor,

@@ -11,7 +11,7 @@ from pathlib import Path
 import polars as pl
 
 from datarift.bronze_writer import BronzeWriter
-from datarift.gold_matchup import transform_matchup_detail, write_gold
+from datarift.gold_matchup import transform_matchup_detail, transform_matchup_intervals, write_gold
 from datarift.silver_league import materialize_silver_league
 from datarift.silver_match import materialize_silver_matches
 from datarift.silver_timeline import materialize_silver_timelines
@@ -97,17 +97,29 @@ def verify_silver(silver_path: str) -> dict[str, int]:
     return result
 
 
-EXPECTED_GOLD_TABLES = ["matchup_detail"]
+EXPECTED_GOLD_TABLES = ["matchup_detail", "matchup_intervals"]
 
 
 def run_gold(silver_path: str, gold_path: str) -> dict[str, int]:
     """Run Gold transforms on Silver data and return table→row-count map."""
+    result: dict[str, int] = {}
+
     participants = pl.read_delta(f"{silver_path}/match_participants")
-    transformed = transform_matchup_detail(participants)
-    row_count = len(transformed)
-    if row_count > 0:
-        write_gold(transformed, f"{gold_path}/matchup_detail")
-    return {"matchup_detail": row_count}
+    matchup_detail_df = transform_matchup_detail(participants)
+    if len(matchup_detail_df) > 0:
+        write_gold(matchup_detail_df, f"{gold_path}/matchup_detail")
+    result["matchup_detail"] = len(matchup_detail_df)
+
+    timeline_frames = pl.read_delta(f"{silver_path}/match_timeline_frames")
+    participant_frames = pl.read_delta(f"{silver_path}/match_timeline_participant_frames")
+    intervals_df = transform_matchup_intervals(
+        matchup_detail_df, participants, timeline_frames, participant_frames,
+    )
+    if len(intervals_df) > 0:
+        write_gold(intervals_df, f"{gold_path}/matchup_intervals")
+    result["matchup_intervals"] = len(intervals_df)
+
+    return result
 
 
 def verify_gold(gold_path: str) -> dict[str, int]:
