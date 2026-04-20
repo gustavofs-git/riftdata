@@ -1,0 +1,10 @@
+[
+  {
+    "puuid": "puuid-smoke-1",
+    "match_ids": ["BR1_SMOKE001"]
+  },
+  {
+    "puuid": "puuid-smoke-2",
+    "match_ids": ["BR1_SMOKE002"]
+  }
+]

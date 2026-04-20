@@ -1,0 +1,14 @@
+[
+  {
+    "puuid": "puuid-smoke-1",
+    "profileIconId": 7035,
+    "revisionDate": 1700000000000,
+    "summonerLevel": 44
+  },
+  {
+    "puuid": "puuid-smoke-2",
+    "profileIconId": 936,
+    "revisionDate": 1700000100000,
+    "summonerLevel": 100
+  }
+]

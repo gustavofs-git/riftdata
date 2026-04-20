@@ -1,0 +1,30 @@
+[
+  {
+    "puuid": "puuid-smoke-1",
+    "leagueId": "league-001",
+    "queueType": "RANKED_SOLO_5x5",
+    "tier": "GOLD",
+    "rank": "II",
+    "leaguePoints": 75,
+    "wins": 120,
+    "losses": 110,
+    "veteran": true,
+    "inactive": false,
+    "freshBlood": false,
+    "hotStreak": true
+  },
+  {
+    "puuid": "puuid-smoke-2",
+    "leagueId": "league-002",
+    "queueType": "RANKED_SOLO_5x5",
+    "tier": "PLATINUM",
+    "rank": "IV",
+    "leaguePoints": 30,
+    "wins": 80,
+    "losses": 85,
+    "veteran": false,
+    "inactive": false,
+    "freshBlood": true,
+    "hotStreak": false
+  }
+]

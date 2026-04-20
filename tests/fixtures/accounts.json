@@ -1,0 +1,12 @@
+[
+  {
+    "puuid": "puuid-smoke-1",
+    "gameName": "SmokePlayer1",
+    "tagLine": "BR1"
+  },
+  {
+    "puuid": "puuid-smoke-2",
+    "gameName": "SmokePlayer2",
+    "tagLine": "BR1"
+  }
+]

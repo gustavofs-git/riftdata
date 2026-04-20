@@ -1,0 +1,4 @@
+region: kr
+tiers:
+  - CHALLENGER
+batch_size: 50
