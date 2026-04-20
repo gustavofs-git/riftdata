@@ -30,10 +30,11 @@ async def extract_league_entries(
     all_puuids: list[str] = list(existing)
 
     logger.info(
-        "extraction_start",
+        "stage_start",
         extractor="league_entries",
+        endpoint="/lol/league-exp/v4/entries",
         tiers=config.tiers,
-        existing_keys=len(existing),
+        existing=len(existing),
     )
 
     if existing:
@@ -43,6 +44,7 @@ async def extract_league_entries(
             skipped=len(existing),
         )
 
+    new_count = 0
     for tier in config.tiers:
         page = 1
         while True:
@@ -72,20 +74,23 @@ async def extract_league_entries(
                     status_code=resp.status_code,
                     region=config.region,
                 )
+                new_count += len(records)
                 logger.info(
                     "batch_written",
                     extractor="league_entries",
                     tier=tier,
                     page=page,
-                    count=len(records),
+                    batch=len(records),
+                    total_new=new_count,
                 )
 
             page += 1
 
     logger.info(
-        "extraction_complete",
+        "stage_complete",
         extractor="league_entries",
         total_puuids=len(all_puuids),
+        new=new_count,
     )
     return all_puuids
 
@@ -106,19 +111,15 @@ async def extract_accounts(
     todo = [p for p in puuids if p not in existing]
 
     logger.info(
-        "extraction_start",
+        "stage_start",
         extractor="accounts",
+        endpoint="/riot/account/v1/accounts/by-puuid",
         total=len(puuids),
         new=len(todo),
+        skipped=len(puuids) - len(todo),
     )
 
-    if len(puuids) - len(todo) > 0:
-        logger.info(
-            "resume_skipped",
-            extractor="accounts",
-            skipped=len(puuids) - len(todo),
-        )
-
+    processed = 0
     batch: list[dict] = []
     for puuid in todo:
         if shutdown_event and shutdown_event.is_set():
@@ -129,7 +130,8 @@ async def extract_accounts(
                     status_code=200,
                     region=config.region,
                 )
-                logger.info("batch_written", extractor="accounts", count=len(batch))
+                processed += len(batch)
+                logger.info("batch_written", extractor="accounts", batch=len(batch), progress=f"{processed}/{len(todo)}")
             return
 
         path = f"/riot/account/v1/accounts/by-puuid/{puuid}"
@@ -144,7 +146,8 @@ async def extract_accounts(
                 status_code=resp.status_code,
                 region=config.region,
             )
-            logger.info("batch_written", extractor="accounts", count=len(batch))
+            processed += len(batch)
+            logger.info("batch_written", extractor="accounts", batch=len(batch), progress=f"{processed}/{len(todo)}")
             batch = []
 
     if batch:
@@ -154,9 +157,10 @@ async def extract_accounts(
             status_code=200,
             region=config.region,
         )
-        logger.info("batch_written", extractor="accounts", count=len(batch))
+        processed += len(batch)
+        logger.info("batch_written", extractor="accounts", batch=len(batch), progress=f"{processed}/{len(todo)}")
 
-    logger.info("extraction_complete", extractor="accounts", processed=len(todo))
+    logger.info("stage_complete", extractor="accounts", processed=processed)
 
 
 async def extract_summoners(
@@ -175,19 +179,15 @@ async def extract_summoners(
     todo = [p for p in puuids if p not in existing]
 
     logger.info(
-        "extraction_start",
+        "stage_start",
         extractor="summoners",
+        endpoint="/lol/summoner/v4/summoners/by-puuid",
         total=len(puuids),
         new=len(todo),
+        skipped=len(puuids) - len(todo),
     )
 
-    if len(puuids) - len(todo) > 0:
-        logger.info(
-            "resume_skipped",
-            extractor="summoners",
-            skipped=len(puuids) - len(todo),
-        )
-
+    processed = 0
     batch: list[dict] = []
     for puuid in todo:
         if shutdown_event and shutdown_event.is_set():
@@ -198,7 +198,8 @@ async def extract_summoners(
                     status_code=200,
                     region=config.region,
                 )
-                logger.info("batch_written", extractor="summoners", count=len(batch))
+                processed += len(batch)
+                logger.info("batch_written", extractor="summoners", batch=len(batch), progress=f"{processed}/{len(todo)}")
             return
 
         path = f"/lol/summoner/v4/summoners/by-puuid/{puuid}"
@@ -213,7 +214,8 @@ async def extract_summoners(
                 status_code=resp.status_code,
                 region=config.region,
             )
-            logger.info("batch_written", extractor="summoners", count=len(batch))
+            processed += len(batch)
+            logger.info("batch_written", extractor="summoners", batch=len(batch), progress=f"{processed}/{len(todo)}")
             batch = []
 
     if batch:
@@ -223,9 +225,10 @@ async def extract_summoners(
             status_code=200,
             region=config.region,
         )
-        logger.info("batch_written", extractor="summoners", count=len(batch))
+        processed += len(batch)
+        logger.info("batch_written", extractor="summoners", batch=len(batch), progress=f"{processed}/{len(todo)}")
 
-    logger.info("extraction_complete", extractor="summoners", processed=len(todo))
+    logger.info("stage_complete", extractor="summoners", processed=processed)
 
 
 async def extract_match_ids(
@@ -245,18 +248,13 @@ async def extract_match_ids(
     todo = [p for p in puuids if p not in existing]
 
     logger.info(
-        "extraction_start",
+        "stage_start",
         extractor="match_ids",
+        endpoint="/lol/match/v5/matches/by-puuid/{puuid}/ids",
         total=len(puuids),
         new=len(todo),
+        skipped=len(puuids) - len(todo),
     )
-
-    if len(puuids) - len(todo) > 0:
-        logger.info(
-            "resume_skipped",
-            extractor="match_ids",
-            skipped=len(puuids) - len(todo),
-        )
 
     # Collect match IDs from existing records
     all_match_ids: list[str] = []
@@ -272,6 +270,7 @@ async def extract_match_ids(
         except Exception:
             pass
 
+    processed = 0
     batch: list[dict] = []
     for puuid in todo:
         if shutdown_event and shutdown_event.is_set():
@@ -282,7 +281,8 @@ async def extract_match_ids(
                     status_code=200,
                     region=config.region,
                 )
-                logger.info("batch_written", extractor="match_ids", count=len(batch))
+                processed += len(batch)
+                logger.info("batch_written", extractor="match_ids", batch=len(batch), progress=f"{processed}/{len(todo)}")
                 for rec in batch:
                     all_match_ids.extend(json.loads(rec["raw_json"]))
             return all_match_ids
@@ -300,7 +300,8 @@ async def extract_match_ids(
                 status_code=resp.status_code,
                 region=config.region,
             )
-            logger.info("batch_written", extractor="match_ids", count=len(batch))
+            processed += len(batch)
+            logger.info("batch_written", extractor="match_ids", batch=len(batch), progress=f"{processed}/{len(todo)}")
             batch = []
 
     if batch:
@@ -310,12 +311,13 @@ async def extract_match_ids(
             status_code=200,
             region=config.region,
         )
-        logger.info("batch_written", extractor="match_ids", count=len(batch))
+        processed += len(batch)
+        logger.info("batch_written", extractor="match_ids", batch=len(batch), progress=f"{processed}/{len(todo)}")
 
     logger.info(
-        "extraction_complete",
+        "stage_complete",
         extractor="match_ids",
-        processed=len(todo),
+        processed=processed,
         total_match_ids=len(all_match_ids),
     )
     return all_match_ids
@@ -337,19 +339,15 @@ async def extract_match_details(
     todo = [m for m in match_ids if m not in existing]
 
     logger.info(
-        "extraction_start",
+        "stage_start",
         extractor="match_details",
+        endpoint="/lol/match/v5/matches/{matchId}",
         total=len(match_ids),
         new=len(todo),
+        skipped=len(match_ids) - len(todo),
     )
 
-    if len(match_ids) - len(todo) > 0:
-        logger.info(
-            "resume_skipped",
-            extractor="match_details",
-            skipped=len(match_ids) - len(todo),
-        )
-
+    processed = 0
     batch: list[dict] = []
     for match_id in todo:
         if shutdown_event and shutdown_event.is_set():
@@ -360,9 +358,8 @@ async def extract_match_details(
                     status_code=200,
                     region=config.region,
                 )
-                logger.info(
-                    "batch_written", extractor="match_details", count=len(batch)
-                )
+                processed += len(batch)
+                logger.info("batch_written", extractor="match_details", batch=len(batch), progress=f"{processed}/{len(todo)}")
             return
 
         path = f"/lol/match/v5/matches/{match_id}"
@@ -377,7 +374,8 @@ async def extract_match_details(
                 status_code=resp.status_code,
                 region=config.region,
             )
-            logger.info("batch_written", extractor="match_details", count=len(batch))
+            processed += len(batch)
+            logger.info("batch_written", extractor="match_details", batch=len(batch), progress=f"{processed}/{len(todo)}")
             batch = []
 
     if batch:
@@ -387,10 +385,11 @@ async def extract_match_details(
             status_code=200,
             region=config.region,
         )
-        logger.info("batch_written", extractor="match_details", count=len(batch))
+        processed += len(batch)
+        logger.info("batch_written", extractor="match_details", batch=len(batch), progress=f"{processed}/{len(todo)}")
 
     logger.info(
-        "extraction_complete", extractor="match_details", processed=len(todo)
+        "stage_complete", extractor="match_details", processed=processed
     )
 
 
@@ -410,19 +409,15 @@ async def extract_match_timelines(
     todo = [m for m in match_ids if m not in existing]
 
     logger.info(
-        "extraction_start",
+        "stage_start",
         extractor="match_timelines",
+        endpoint="/lol/match/v5/matches/{matchId}/timeline",
         total=len(match_ids),
         new=len(todo),
+        skipped=len(match_ids) - len(todo),
     )
 
-    if len(match_ids) - len(todo) > 0:
-        logger.info(
-            "resume_skipped",
-            extractor="match_timelines",
-            skipped=len(match_ids) - len(todo),
-        )
-
+    processed = 0
     batch: list[dict] = []
     for match_id in todo:
         if shutdown_event and shutdown_event.is_set():
@@ -433,9 +428,8 @@ async def extract_match_timelines(
                     status_code=200,
                     region=config.region,
                 )
-                logger.info(
-                    "batch_written", extractor="match_timelines", count=len(batch)
-                )
+                processed += len(batch)
+                logger.info("batch_written", extractor="match_timelines", batch=len(batch), progress=f"{processed}/{len(todo)}")
             return
 
         path = f"/lol/match/v5/matches/{match_id}/timeline"
@@ -450,9 +444,8 @@ async def extract_match_timelines(
                 status_code=resp.status_code,
                 region=config.region,
             )
-            logger.info(
-                "batch_written", extractor="match_timelines", count=len(batch)
-            )
+            processed += len(batch)
+            logger.info("batch_written", extractor="match_timelines", batch=len(batch), progress=f"{processed}/{len(todo)}")
             batch = []
 
     if batch:
@@ -462,8 +455,9 @@ async def extract_match_timelines(
             status_code=200,
             region=config.region,
         )
-        logger.info("batch_written", extractor="match_timelines", count=len(batch))
+        processed += len(batch)
+        logger.info("batch_written", extractor="match_timelines", batch=len(batch), progress=f"{processed}/{len(todo)}")
 
     logger.info(
-        "extraction_complete", extractor="match_timelines", processed=len(todo)
+        "stage_complete", extractor="match_timelines", processed=processed
     )

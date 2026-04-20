@@ -15,8 +15,8 @@ DataRift pulls ranked League of Legends data from the Riot API (league entries, 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-org/datarift.git
-cd datarift
+git clone https://github.com/gustavofs-git/riftdata.git
+cd riftdata
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
@@ -61,20 +61,36 @@ Start the Dagster development server:
 make dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. From the Dagster UI, materialize assets in order:
+Open [http://localhost:3000](http://localhost:3000) in your browser. The asset graph shows each extraction entity as an independent asset you can materialize, monitor, and retry individually.
 
-1. **bronze_extraction** — pulls data from the Riot API into Bronze Delta tables
-2. **silver_matches**, **silver_timelines**, **silver_league** — transform Bronze data into 11 Silver tables
+**Bronze assets** (one per API entity, materialize in dependency order):
+
+1. **bronze_league_entries** — league entries from League-Exp-V4 (produces puuids)
+2. **bronze_accounts** — account data from Account-V1 (depends on league entries)
+3. **bronze_summoners** — summoner profiles from Summoner-V4 (depends on league entries)
+4. **bronze_match_ids** — match ID lists from Match-V5 (depends on league entries)
+5. **bronze_match_details** — match detail data from Match-V5 (depends on match IDs)
+6. **bronze_match_timelines** — match timeline data from Match-V5 (depends on match IDs)
+
+**Silver assets** (transform Bronze into normalized tables):
+
+7. **silver_matches** — match, participant, team tables (depends on match details)
+8. **silver_timelines** — timeline frame and event tables (depends on match timelines)
+9. **silver_league** — league entry, summoner, account tables (depends on league entries + accounts + summoners)
+
+Each asset logs human-readable progress to the Dagster UI — you can see which API endpoint is being called, how many records have been processed, and batch-level progress (e.g., `150/2000`).
 
 ### 5. Configure extraction
 
-Edit `config/sample.yaml` to control which region and tiers to pull:
+Edit `config/sample.yaml` to control which region, tiers, and batch size to pull:
 
 ```yaml
-region: kr
+region: br
 tiers:
   - CHALLENGER
-batch_size: 50
+  - GRANDMASTER
+  - MASTER
+batch_size: 200
 ```
 
 Supported regions: `br`, `eune`, `euw`, `jp`, `kr`, `la1`, `la2`, `na`, `oce`, `ph`, `ru`, `sg`, `th`, `tr`, `tw`, `vn`
@@ -102,10 +118,10 @@ datarift/
 ├── scripts/
 │   └── smoke.py                 # Smoke test — Bronze fixtures → Silver transforms
 ├── src/datarift/
-│   ├── definitions.py           # Dagster asset definitions (entrypoint)
+│   ├── definitions.py           # Dagster asset definitions (9 assets, entrypoint)
 │   ├── config.py                # ExtractionConfig model + 16 region mappings
-│   ├── runner.py                # Async extraction orchestrator
-│   ├── extractors.py            # Riot API data extractors
+│   ├── runner.py                # Standalone async extraction orchestrator (all-in-one)
+│   ├── extractors.py            # Riot API data extractors (one per entity)
 │   ├── riot_client.py           # httpx-based Riot API client with rate limiting
 │   ├── riot_client_models.py    # Pydantic models for API responses
 │   ├── bronze_writer.py         # Delta Lake writer for Bronze tables

@@ -50,13 +50,16 @@ def _inject_context(
     return processor
 
 
+_STDOUT_HANDLER_NAME = "datarift_stdout"
+
+
 def configure_logging(run_id: str, asset_name: str) -> None:
     """Configure structlog with dual sinks for one asset invocation.
 
-    - Stdout: JSON lines (captured by Dagster)
-    - File: data/_logs/<run_id>/<asset>.jsonl
+    - Stdout: human-readable colored output (visible in Dagster UI logs)
+    - File: data/_logs/<run_id>/<asset>.jsonl (machine-readable)
 
-    Safe to call multiple times — clears previous JSONL handler to avoid stacking.
+    Safe to call multiple times — clears previous handlers to avoid stacking.
     """
     # --- stdlib file handler for JSONL sink ---
     jsonl_path = get_jsonl_path(run_id, asset_name)
@@ -64,19 +67,16 @@ def configure_logging(run_id: str, asset_name: str) -> None:
 
     root = logging.getLogger()
 
-    # Remove any previous datarift JSONL handler to prevent stacking
+    # Remove previous datarift handlers to prevent stacking
     for h in list(root.handlers):
-        if getattr(h, "name", None) == _JSONL_HANDLER_NAME:
+        if getattr(h, "name", None) in (_JSONL_HANDLER_NAME, _STDOUT_HANDLER_NAME):
             root.removeHandler(h)
             h.close()
 
     file_handler = logging.FileHandler(str(jsonl_path), mode="a", encoding="utf-8")
     file_handler.name = _JSONL_HANDLER_NAME
-    # The file handler uses structlog's stdlib JSON formatter
     file_handler.setFormatter(structlog.stdlib.ProcessorFormatter(
-        processor=structlog.dev.ConsoleRenderer()
-        if False  # always JSON for file
-        else structlog.processors.JSONRenderer(),
+        processor=structlog.processors.JSONRenderer(),
     ))
     root.addHandler(file_handler)
     root.setLevel(logging.DEBUG)
@@ -95,24 +95,21 @@ def configure_logging(run_id: str, asset_name: str) -> None:
         cache_logger_on_first_use=False,  # run_id changes per invocation
     )
 
-    # Stdout handler — ensure exactly one StreamHandler with JSON
+    # Stdout handler — human-readable console output
     _ensure_stdout_handler(root)
 
 
 def _ensure_stdout_handler(root: logging.Logger) -> None:
-    """Add a JSON stdout handler if none exists yet."""
+    """Add a human-readable stdout handler if none exists yet."""
     import sys
 
     for h in root.handlers:
-        if (
-            isinstance(h, logging.StreamHandler)
-            and not isinstance(h, logging.FileHandler)
-            and getattr(h, "stream", None) is sys.stdout
-        ):
+        if getattr(h, "name", None) == _STDOUT_HANDLER_NAME:
             return  # already present
 
     stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.name = _STDOUT_HANDLER_NAME
     stdout_handler.setFormatter(structlog.stdlib.ProcessorFormatter(
-        processor=structlog.processors.JSONRenderer(),
+        processor=structlog.dev.ConsoleRenderer(),
     ))
     root.addHandler(stdout_handler)

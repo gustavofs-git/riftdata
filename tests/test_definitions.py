@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from dagster import AssetKey, build_asset_context
 
 from datarift.definitions import (
-    bronze_extraction,
+    bronze_league_entries,
+    bronze_accounts,
+    bronze_summoners,
+    bronze_match_ids,
+    bronze_match_details,
+    bronze_match_timelines,
     defs,
     silver_league,
     silver_matches,
@@ -16,51 +21,128 @@ from datarift.definitions import (
 
 
 # ---------------------------------------------------------------------------
-# Definitions object tests
+# Asset graph structure tests
 # ---------------------------------------------------------------------------
+
+_BRONZE_ASSETS = {
+    "bronze_league_entries",
+    "bronze_accounts",
+    "bronze_summoners",
+    "bronze_match_ids",
+    "bronze_match_details",
+    "bronze_match_timelines",
+}
+
+_SILVER_ASSETS = {
+    "silver_matches",
+    "silver_timelines",
+    "silver_league",
+}
 
 
 def test_definitions_loads_all_assets():
     graph = defs.resolve_asset_graph()
     keys = {k.to_user_string() for k in graph.get_all_asset_keys()}
-    assert keys == {"bronze_extraction", "silver_matches", "silver_timelines", "silver_league"}
+    assert keys == _BRONZE_ASSETS | _SILVER_ASSETS
 
 
-def test_silver_assets_depend_on_bronze():
+def test_bronze_dependency_chain():
+    """Accounts, summoners, and match_ids depend on league_entries.
+    Match details and timelines depend on match_ids."""
     graph = defs.resolve_asset_graph()
-    for name in ("silver_matches", "silver_timelines", "silver_league"):
+
+    for name in ("bronze_accounts", "bronze_summoners", "bronze_match_ids"):
         node = graph.get(AssetKey(name))
         parent_keys = {k.to_user_string() for k in node.parent_keys}
-        assert "bronze_extraction" in parent_keys, f"{name} should depend on bronze_extraction"
+        assert "bronze_league_entries" in parent_keys, f"{name} should depend on bronze_league_entries"
+
+    for name in ("bronze_match_details", "bronze_match_timelines"):
+        node = graph.get(AssetKey(name))
+        parent_keys = {k.to_user_string() for k in node.parent_keys}
+        assert "bronze_match_ids" in parent_keys, f"{name} should depend on bronze_match_ids"
+
+
+def test_silver_dependencies():
+    """Silver assets depend on the correct Bronze assets."""
+    graph = defs.resolve_asset_graph()
+
+    node = graph.get(AssetKey("silver_matches"))
+    assert "bronze_match_details" in {k.to_user_string() for k in node.parent_keys}
+
+    node = graph.get(AssetKey("silver_timelines"))
+    assert "bronze_match_timelines" in {k.to_user_string() for k in node.parent_keys}
+
+    node = graph.get(AssetKey("silver_league"))
+    parent_keys = {k.to_user_string() for k in node.parent_keys}
+    assert "bronze_league_entries" in parent_keys
+    assert "bronze_summoners" in parent_keys
+    assert "bronze_accounts" in parent_keys
 
 
 # ---------------------------------------------------------------------------
-# Bronze asset metadata test
+# Bronze asset metadata tests
 # ---------------------------------------------------------------------------
 
 
 @patch("datarift.definitions.EnvVar")
-@patch("datarift.definitions.run_extraction", new_callable=AsyncMock)
-def test_bronze_extraction_metadata(mock_run, mock_envvar, tmp_path):
+@patch("datarift.definitions.extract_league_entries", new_callable=AsyncMock)
+@patch("datarift.definitions._load_config")
+def test_bronze_league_entries_metadata(mock_config, mock_extract, mock_envvar):
     mock_envvar.return_value.get_value.return_value = "RGAPI-fake"
-    mock_run.return_value = None
+    mock_extract.return_value = ["puuid_a", "puuid_b"]
 
-    # Create some fake bronze table dirs so succeeded count > 0
-    for table in ("league_entries_raw", "accounts_raw", "summoners_raw"):
-        (tmp_path / table).mkdir()
+    cfg = MagicMock()
+    cfg.platform_host = "https://br1.api.riotgames.com"
+    cfg.bronze_path = "/tmp/test_bronze"
+    mock_config.return_value = cfg
 
-    with patch("datarift.definitions.ExtractionConfig") as mock_cfg_cls:
-        mock_cfg = mock_cfg_cls.return_value
-        mock_cfg.bronze_path = str(tmp_path)
-        mock_cfg.region = "br"
-        mock_cfg.tiers = ["CHALLENGER"]
+    context = build_asset_context()
+    result = bronze_league_entries(context)
 
-        context = build_asset_context()
-        result = bronze_extraction(context)
+    assert result.metadata["puuids"] == 2
+    assert "total_wall_time" in result.metadata
 
-    assert result.metadata["succeeded"] == 3
-    assert result.metadata["failed"] == 0
-    assert "rate_limit_hits" in result.metadata
+
+@patch("datarift.definitions.EnvVar")
+@patch("datarift.definitions.extract_accounts", new_callable=AsyncMock)
+@patch("datarift.definitions._read_puuids_from_bronze")
+@patch("datarift.definitions._load_config")
+def test_bronze_accounts_metadata(mock_config, mock_read_puuids, mock_extract, mock_envvar):
+    mock_envvar.return_value.get_value.return_value = "RGAPI-fake"
+    mock_read_puuids.return_value = ["puuid_a", "puuid_b"]
+    mock_extract.return_value = None
+
+    cfg = MagicMock()
+    cfg.regional_host = "https://americas.api.riotgames.com"
+    cfg.bronze_path = "/tmp/test_bronze"
+    mock_config.return_value = cfg
+
+    context = build_asset_context()
+    result = bronze_accounts(context)
+
+    assert result.metadata["puuids"] == 2
+    assert "total_wall_time" in result.metadata
+
+
+@patch("datarift.definitions.EnvVar")
+@patch("datarift.definitions.extract_match_ids", new_callable=AsyncMock)
+@patch("datarift.definitions._read_puuids_from_bronze")
+@patch("datarift.definitions._load_config")
+def test_bronze_match_ids_metadata(mock_config, mock_read_puuids, mock_extract, mock_envvar):
+    mock_envvar.return_value.get_value.return_value = "RGAPI-fake"
+    mock_read_puuids.return_value = ["puuid_a"]
+    mock_extract.return_value = ["KR_m1", "KR_m2"]
+
+    cfg = MagicMock()
+    cfg.regional_host = "https://americas.api.riotgames.com"
+    cfg.bronze_path = "/tmp/test_bronze"
+    mock_config.return_value = cfg
+
+    context = build_asset_context()
+    result = bronze_match_ids(context)
+
+    assert result.metadata["puuids"] == 1
+    assert result.metadata["match_ids"] == 2
     assert "total_wall_time" in result.metadata
 
 
