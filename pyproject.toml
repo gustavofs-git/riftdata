@@ -35,4 +35,5 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
     "riot_live: tests that require a live Riot API key",
+    "postgres: tests that require a running Postgres instance",
 ]
