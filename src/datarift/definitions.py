@@ -56,7 +56,7 @@ from datarift.silver_timeline import (
     transform_match_timeline_frames,
     transform_match_timeline_participant_frames,
 )
-from datarift.gold_matchup import transform_matchup_detail, transform_matchup_intervals, write_gold
+from datarift.gold_matchup import transform_matchup_aggregates, transform_matchup_detail, transform_matchup_intervals, write_gold
 
 
 def _get_run_id(context: AssetExecutionContext) -> str:
@@ -543,6 +543,53 @@ def gold_matchup_intervals(context: AssetExecutionContext) -> MaterializeResult:
     )
 
 
+@asset(
+    deps=[
+        gold_matchup_detail,
+        gold_matchup_intervals,
+        silver_matches,
+        silver_match_participants,
+        silver_league_entries,
+    ],
+    group_name="gold",
+)
+def gold_matchup_aggregates(context: AssetExecutionContext) -> MaterializeResult:
+    """Gold matchup_aggregates table — averaged stats per (champion, opponent, lane, interval, patch, tier)."""
+    configure_logging(_get_run_id(context), "gold_matchup_aggregates")
+
+    gold_detail_path = "data/gold/matchup_detail"
+    gold_intervals_path = "data/gold/matchup_intervals"
+    silver_matches_path = "data/silver/matches"
+    silver_participants_path = "data/silver/match_participants"
+    silver_league_path = "data/silver/league_entries"
+
+    for path in [gold_detail_path, gold_intervals_path, silver_matches_path, silver_participants_path, silver_league_path]:
+        if not DeltaTable.is_deltatable(path):
+            return MaterializeResult(metadata={"rows": 0, "skipped": True})
+
+    t0 = time.monotonic()
+    matchup_detail_df = pl.scan_delta(gold_detail_path).collect()
+    intervals_df = pl.scan_delta(gold_intervals_path).collect()
+    matches_df = pl.scan_delta(silver_matches_path).collect()
+    participants_df = pl.scan_delta(silver_participants_path).collect()
+    league_entries_df = pl.scan_delta(silver_league_path).collect()
+
+    transformed = transform_matchup_aggregates(
+        matchup_detail_df, intervals_df, matches_df, participants_df, league_entries_df,
+        min_sample_size=1,
+    )
+    row_count = len(transformed)
+
+    if row_count > 0:
+        write_gold(transformed, "data/gold/matchup_aggregates")
+
+    wall_time = round(time.monotonic() - t0, 2)
+
+    return MaterializeResult(
+        metadata={"rows": row_count, "total_wall_time": wall_time},
+    )
+
+
 # ---------------------------------------------------------------------------
 # Jobs — in-process executor avoids OOM from parallel Silver materializations
 # ---------------------------------------------------------------------------
@@ -583,6 +630,7 @@ defs = Definitions(
         # Gold
         gold_matchup_detail,
         gold_matchup_intervals,
+        gold_matchup_aggregates,
     ],
     jobs=[all_assets_job],
     executor=in_process_executor,

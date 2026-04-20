@@ -11,7 +11,7 @@ from pathlib import Path
 import polars as pl
 
 from datarift.bronze_writer import BronzeWriter
-from datarift.gold_matchup import transform_matchup_detail, transform_matchup_intervals, write_gold
+from datarift.gold_matchup import transform_matchup_aggregates, transform_matchup_detail, transform_matchup_intervals, write_gold
 from datarift.silver_league import materialize_silver_league
 from datarift.silver_match import materialize_silver_matches
 from datarift.silver_timeline import materialize_silver_timelines
@@ -97,7 +97,7 @@ def verify_silver(silver_path: str) -> dict[str, int]:
     return result
 
 
-EXPECTED_GOLD_TABLES = ["matchup_detail", "matchup_intervals"]
+EXPECTED_GOLD_TABLES = ["matchup_detail", "matchup_intervals", "matchup_aggregates"]
 
 
 def run_gold(silver_path: str, gold_path: str) -> dict[str, int]:
@@ -118,6 +118,16 @@ def run_gold(silver_path: str, gold_path: str) -> dict[str, int]:
     if len(intervals_df) > 0:
         write_gold(intervals_df, f"{gold_path}/matchup_intervals")
     result["matchup_intervals"] = len(intervals_df)
+
+    matches = pl.read_delta(f"{silver_path}/matches")
+    league_entries = pl.read_delta(f"{silver_path}/league_entries")
+    aggregates_df = transform_matchup_aggregates(
+        matchup_detail_df, intervals_df, matches, participants, league_entries,
+        min_sample_size=1,
+    )
+    if len(aggregates_df) > 0:
+        write_gold(aggregates_df, f"{gold_path}/matchup_aggregates")
+    result["matchup_aggregates"] = len(aggregates_df)
 
     return result
 
