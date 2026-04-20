@@ -1,0 +1,5 @@
+2026-04-20 14:38:00 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 785601 - LOGS_CAPTURED - Started capturing logs in process (pid: 785601).
+2026-04-20 14:38:00 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 785601 - silver_match_timeline_frames - STEP_START - Started execution of step "silver_match_timeline_frames".
+2026-04-20 14:38:53 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 785601 - silver_match_timeline_frames - STEP_OUTPUT - Yielded output "result" of type "Any". (Type check passed).
+2026-04-20 14:38:53 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 785601 - silver_match_timeline_frames - ASSET_MATERIALIZATION - Materialized value silver_match_timeline_frames.
+2026-04-20 14:38:53 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 785601 - silver_match_timeline_frames - STEP_SUCCESS - Finished execution of step "silver_match_timeline_frames" in 53.08s.

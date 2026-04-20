@@ -1,0 +1,30 @@
+2026-04-20 15:00:03 -0300 - dagster - DEBUG - __ASSET_JOB - 08a0b169-d1cc-4c24-acdd-0a2addb45e8e - 849529 - LOGS_CAPTURED - Started capturing logs in process (pid: 849529).
+2026-04-20 15:00:03 -0300 - dagster - DEBUG - __ASSET_JOB - 08a0b169-d1cc-4c24-acdd-0a2addb45e8e - 849529 - silver_match_timeline_participant_frames - STEP_START - Started execution of step "silver_match_timeline_participant_frames".
+2026-04-20 15:00:29 -0300 - dagster - ERROR - __ASSET_JOB - 08a0b169-d1cc-4c24-acdd-0a2addb45e8e - 849529 - silver_match_timeline_participant_frames - STEP_FAILURE - Execution of step "silver_match_timeline_participant_frames" failed.
+
+dagster._core.errors.DagsterExecutionStepExecutionError: Error occurred while executing op "silver_match_timeline_participant_frames"::
+
+AttributeError: 'NoneType' object has no attribute 'items'
+
+Stack Trace:
+  File "/home/gustavo/Documents/github/datarift/.venv/lib/python3.12/site-packages/dagster/_core/execution/plan/utils.py", line 57, in op_execution_error_boundary
+    yield
+  File "/home/gustavo/Documents/github/datarift/.venv/lib/python3.12/site-packages/dagster/_utils/__init__.py", line 394, in iterate_with_context
+    next_output = next(iterator)
+                  ^^^^^^^^^^^^^^
+  File "/home/gustavo/Documents/github/datarift/.venv/lib/python3.12/site-packages/dagster/_core/execution/plan/compute_generator.py", line 135, in _coerce_op_compute_fn_to_iterator
+    result = invoke_compute_fn(
+             ^^^^^^^^^^^^^^^^^^
+  File "/home/gustavo/Documents/github/datarift/.venv/lib/python3.12/site-packages/dagster/_core/execution/plan/compute_generator.py", line 115, in invoke_compute_fn
+    return fn(context, **args_to_pass) if context_arg_provided else fn(**args_to_pass)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gustavo/Documents/github/datarift/src/datarift/definitions.py", line 358, in silver_match_timeline_participant_frames
+    return _materialize_silver(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/gustavo/Documents/github/datarift/src/datarift/definitions.py", line 279, in _materialize_silver
+    transformed = transform(raw_df)
+                  ^^^^^^^^^^^^^^^^^
+  File "/home/gustavo/Documents/github/datarift/src/datarift/silver_timeline.py", line 59, in transform_match_timeline_participant_frames
+    for key, pf in participant_frames.items():
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+

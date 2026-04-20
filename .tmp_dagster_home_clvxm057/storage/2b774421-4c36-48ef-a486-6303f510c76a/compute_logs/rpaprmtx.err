@@ -1,0 +1,5 @@
+2026-04-20 13:39:53 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620876 - LOGS_CAPTURED - Started capturing logs in process (pid: 620876).
+2026-04-20 13:39:53 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620876 - silver_match_teams_bans - STEP_START - Started execution of step "silver_match_teams_bans".
+2026-04-20 13:39:57 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620876 - silver_match_teams_bans - STEP_OUTPUT - Yielded output "result" of type "Any". (Type check passed).
+2026-04-20 13:39:57 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620876 - silver_match_teams_bans - ASSET_MATERIALIZATION - Materialized value silver_match_teams_bans.
+2026-04-20 13:39:57 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620876 - silver_match_teams_bans - STEP_SUCCESS - Finished execution of step "silver_match_teams_bans" in 4.36s.

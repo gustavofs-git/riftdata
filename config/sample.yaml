@@ -2,3 +2,4 @@ region: kr
 tiers:
   - CHALLENGER
 batch_size: 50
+silver_batch_size: 100

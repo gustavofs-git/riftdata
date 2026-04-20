@@ -1,0 +1,5 @@
+2026-04-20 10:51:59 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 166025 - LOGS_CAPTURED - Started capturing logs in process (pid: 166025).
+2026-04-20 10:51:59 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 166025 - bronze_accounts - STEP_START - Started execution of step "bronze_accounts".
+2026-04-20 11:07:50 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 166025 - bronze_accounts - STEP_OUTPUT - Yielded output "result" of type "Any". (Type check passed).
+2026-04-20 11:07:50 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 166025 - bronze_accounts - ASSET_MATERIALIZATION - Materialized value bronze_accounts.
+2026-04-20 11:07:50 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 166025 - bronze_accounts - STEP_SUCCESS - Finished execution of step "bronze_accounts" in 15m51s.

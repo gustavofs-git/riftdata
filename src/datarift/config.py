@@ -32,6 +32,7 @@ class ExtractionConfig(BaseModel):
     tiers: list[str]
     queue: str = "RANKED_SOLO_5x5"
     batch_size: int = 200
+    silver_batch_size: int = 200
     bronze_path: str = "data/bronze"
     silver_path: str = "data/silver"
     strict_mode: bool = False

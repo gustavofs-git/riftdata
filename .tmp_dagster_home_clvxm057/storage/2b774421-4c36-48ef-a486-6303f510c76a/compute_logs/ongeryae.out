@@ -1,0 +1,52 @@
+[1mUsing selector: EpollSelector [0m
+[[32m[1minfo     [0m] [1mstage_start                   [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mendpoint[0m=[35m/lol/league-exp/v4/entries[0m [36mevent_type[0m=[35mstage_start[0m [36mexisting[0m=[35m0[0m [36mextractor[0m=[35mleague_entries[0m [36mmessage[0m=[35mstage_start[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mINFO[0m [36mtiers[0m=[35m['CHALLENGER'][0m [36mts[0m=[35m2026-04-20T13:51:55.033194Z[0m
+[1mconnect_tcp.started host='kr.api.riotgames.com' port=443 local_address=None timeout=5.0 socket_options=None[0m
+[1mconnect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x7c0a5c004e00>[0m
+[1mstart_tls.started ssl_context=<ssl.SSLContext object at 0x7c0a47f2ea50> server_hostname='kr.api.riotgames.com' timeout=5.0[0m
+[1mstart_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x7c0a47f3ac00>[0m
+[1msend_request_headers.started request=<Request [b'GET']>[0m
+[1msend_request_headers.complete [0m
+[1msend_request_body.started request=<Request [b'GET']>[0m
+[1msend_request_body.complete    [0m
+[1mreceive_response_headers.started request=<Request [b'GET']>[0m
+[1mreceive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Mon, 20 Apr 2026 13:51:56 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Access-Control-Allow-Headers', b'User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range'), (b'Access-Control-Allow-Methods', b'GET, PUT, DELETE, POST, OPTIONS'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Range'), (b'set-cookie', b'__cf_bm=.AuiemiM7qBt246lysm0DAJmyt6YTE65LQqR1WVcmZo-1776693115.4116898-1.0.1.1-2q2qNIa2wAo.okfGB_0uc65R3iRwuDFY6R_F.Y.Il0sVweluByse6FnX86zZb4q.P.LFhcgq5kC8Pq0FlEbgDcpBQpAOqgpocspXytxcwsn6P27gN_HE4k5jjQT_bzHt; HttpOnly; Secure; Path=/; Domain=api.riotgames.com; Expires=Mon, 20 Apr 2026 14:21:56 GMT'), (b'Content-Encoding', b'gzip'), (b'Vary', b'Accept-Encoding'), (b'X-App-Rate-Limit', b'100:120,20:1'), (b'X-App-Rate-Limit-Count', b'1:120,1:1'), (b'X-Method-Rate-Limit', b'50:10'), (b'X-Method-Rate-Limit-Count', b'1:10'), (b'cf-cache-status', b'DYNAMIC'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9ef4a0635ce21e65-GRU')])[0m
+[1mHTTP Request: GET https://kr.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/CHALLENGER/I?page=1 "HTTP/1.1 200 OK"[0m
+[1mreceive_response_body.started request=<Request [b'GET']>[0m
+[1mreceive_response_body.complete[0m
+[1mresponse_closed.started       [0m
+[1mresponse_closed.complete      [0m
+[[32m[1mdebug    [0m] [1mrate_limit.app_updated        [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mrate_limit.app_updated[0m [36mmessage[0m=[35mrate_limit.app_updated[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mDEBUG[0m [36mts[0m=[35m2026-04-20T13:51:56.723101Z[0m [36mwindows[0m=[35m[(100, 120, 1), (20, 1, 1)][0m
+[[32m[1mdebug    [0m] [1mrate_limit.method_updated     [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mrate_limit.method_updated[0m [36mmessage[0m=[35mrate_limit.method_updated[0m [36mmethod_key[0m=[35mlol.league-exp.v4[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mDEBUG[0m [36mts[0m=[35m2026-04-20T13:51:56.723246Z[0m [36mwindows[0m=[35m[(50, 10, 1)][0m
+[[32m[1minfo     [0m] [1mbatch_written                 [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mbatch[0m=[35m205[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mbatch_written[0m [36mextractor[0m=[35mleague_entries[0m [36mmessage[0m=[35mbatch_written[0m [36mpage[0m=[35m1[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mINFO[0m [36mtier[0m=[35mCHALLENGER[0m [36mtotal_new[0m=[35m205[0m [36mts[0m=[35m2026-04-20T13:51:56.748187Z[0m
+[1msend_request_headers.started request=<Request [b'GET']>[0m
+[1msend_request_headers.complete [0m
+[1msend_request_body.started request=<Request [b'GET']>[0m
+[1msend_request_body.complete    [0m
+[1mreceive_response_headers.started request=<Request [b'GET']>[0m
+[1mreceive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Mon, 20 Apr 2026 13:51:57 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Access-Control-Allow-Headers', b'User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range'), (b'Access-Control-Allow-Methods', b'GET, PUT, DELETE, POST, OPTIONS'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Range'), (b'Content-Encoding', b'gzip'), (b'Vary', b'Accept-Encoding'), (b'X-App-Rate-Limit', b'100:120,20:1'), (b'X-App-Rate-Limit-Count', b'2:120,1:1'), (b'X-Method-Rate-Limit', b'50:10'), (b'X-Method-Rate-Limit-Count', b'2:10'), (b'cf-cache-status', b'DYNAMIC'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9ef4a06baff91e65-GRU')])[0m
+[1mHTTP Request: GET https://kr.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/CHALLENGER/I?page=2 "HTTP/1.1 200 OK"[0m
+[1mreceive_response_body.started request=<Request [b'GET']>[0m
+[1mreceive_response_body.complete[0m
+[1mresponse_closed.started       [0m
+[1mresponse_closed.complete      [0m
+[[32m[1mdebug    [0m] [1mrate_limit.app_updated        [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mrate_limit.app_updated[0m [36mmessage[0m=[35mrate_limit.app_updated[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mDEBUG[0m [36mts[0m=[35m2026-04-20T13:51:57.452716Z[0m [36mwindows[0m=[35m[(100, 120, 2), (20, 1, 1)][0m
+[[32m[1mdebug    [0m] [1mrate_limit.method_updated     [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mrate_limit.method_updated[0m [36mmessage[0m=[35mrate_limit.method_updated[0m [36mmethod_key[0m=[35mlol.league-exp.v4[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mDEBUG[0m [36mts[0m=[35m2026-04-20T13:51:57.452863Z[0m [36mwindows[0m=[35m[(50, 10, 2)][0m
+[[32m[1minfo     [0m] [1mbatch_written                 [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mbatch[0m=[35m95[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mbatch_written[0m [36mextractor[0m=[35mleague_entries[0m [36mmessage[0m=[35mbatch_written[0m [36mpage[0m=[35m2[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mINFO[0m [36mtier[0m=[35mCHALLENGER[0m [36mtotal_new[0m=[35m300[0m [36mts[0m=[35m2026-04-20T13:51:57.461173Z[0m
+[1msend_request_headers.started request=<Request [b'GET']>[0m
+[1msend_request_headers.complete [0m
+[1msend_request_body.started request=<Request [b'GET']>[0m
+[1msend_request_body.complete    [0m
+[1mreceive_response_headers.started request=<Request [b'GET']>[0m
+[1mreceive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Mon, 20 Apr 2026 13:51:57 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Access-Control-Allow-Headers', b'User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range'), (b'Access-Control-Allow-Methods', b'GET, PUT, DELETE, POST, OPTIONS'), (b'Access-Control-Allow-Origin', b'*'), (b'Access-Control-Expose-Headers', b'Content-Length,Content-Range'), (b'Content-Encoding', b'gzip'), (b'Vary', b'Accept-Encoding'), (b'X-App-Rate-Limit', b'100:120,20:1'), (b'X-App-Rate-Limit-Count', b'3:120,2:1'), (b'X-Method-Rate-Limit', b'50:10'), (b'X-Method-Rate-Limit-Count', b'3:10'), (b'cf-cache-status', b'DYNAMIC'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9ef4a070295c1e65-GRU')])[0m
+[1mHTTP Request: GET https://kr.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/CHALLENGER/I?page=3 "HTTP/1.1 200 OK"[0m
+[1mreceive_response_body.started request=<Request [b'GET']>[0m
+[1mreceive_response_body.complete[0m
+[1mresponse_closed.started       [0m
+[1mresponse_closed.complete      [0m
+[[32m[1mdebug    [0m] [1mrate_limit.app_updated        [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mrate_limit.app_updated[0m [36mmessage[0m=[35mrate_limit.app_updated[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mDEBUG[0m [36mts[0m=[35m2026-04-20T13:51:57.820716Z[0m [36mwindows[0m=[35m[(100, 120, 3), (20, 1, 2)][0m
+[[32m[1mdebug    [0m] [1mrate_limit.method_updated     [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mrate_limit.method_updated[0m [36mmessage[0m=[35mrate_limit.method_updated[0m [36mmethod_key[0m=[35mlol.league-exp.v4[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mDEBUG[0m [36mts[0m=[35m2026-04-20T13:51:57.820857Z[0m [36mwindows[0m=[35m[(50, 10, 3)][0m
+[[32m[1minfo     [0m] [1mstage_complete                [0m [36masset_name[0m=[35mbronze_league_entries[0m [36mendpoint[0m=[35m[0m [36mevent_type[0m=[35mstage_complete[0m [36mextractor[0m=[35mleague_entries[0m [36mmessage[0m=[35mstage_complete[0m [36mnew[0m=[35m300[0m [36mrun_id[0m=[35m2b774421-4c36-48ef-a486-6303f510c76a[0m [36mseverity[0m=[35mINFO[0m [36mtotal_puuids[0m=[35m300[0m [36mts[0m=[35m2026-04-20T13:51:57.821016Z[0m
+[1mclose.started                 [0m
+[1mclose.complete                [0m
+[1mContext impl SQLiteImpl.      [0m
+[1mWill assume non-transactional DDL.[0m

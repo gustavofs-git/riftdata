@@ -20,6 +20,8 @@ from dagster import (
     EnvVar,
     MaterializeResult,
     asset,
+    define_asset_job,
+    in_process_executor,
 )
 from dagster._core.errors import DagsterInvalidPropertyError
 from deltalake import DeltaTable
@@ -264,22 +266,61 @@ def _materialize_silver(
     silver_table: str,
     transform,
     predicate: str,
+    chunked: bool = False,
 ) -> MaterializeResult:
-    """Shared helper: read one Bronze table, transform, write one Silver table."""
+    """Shared helper: read one Bronze table, transform, write one Silver table.
+
+    When chunked=True, processes silver_batch_size rows at a time to cap memory.
+    The MERGE write is idempotent, so this is resume-safe after a crash.
+    """
+    import gc
+
+    import structlog
+
+    log = structlog.get_logger()
     configure_logging(_get_run_id(context), asset_name)
 
     bronze_path = f"data/bronze/{bronze_table}"
     if not DeltaTable.is_deltatable(bronze_path):
         return MaterializeResult(metadata={"rows": 0, "skipped": True})
 
-    t0 = time.monotonic()
-    dt = DeltaTable(bronze_path)
-    raw_df = pl.DataFrame(dt.to_pyarrow_table())
-    transformed = transform(raw_df)
-    row_count = len(transformed)
-
+    config = _load_config()
     silver_path = f"data/silver/{silver_table}"
-    write_silver(transformed, silver_path, predicate)
+    t0 = time.monotonic()
+
+    if not chunked:
+        raw_df = pl.scan_delta(bronze_path).collect()
+        transformed = transform(raw_df)
+        row_count = len(transformed)
+        write_silver(transformed, silver_path, predicate)
+    else:
+        batch_size = config.silver_batch_size
+        dt = DeltaTable(bronze_path)
+        total_rows = dt.to_pyarrow_dataset().count_rows()
+        row_count = 0
+
+        for offset in range(0, total_rows, batch_size):
+            chunk_df = pl.scan_delta(bronze_path).slice(offset, batch_size).collect()
+            if chunk_df.is_empty():
+                break
+
+            transformed = transform(chunk_df)
+            chunk_rows = len(transformed)
+            row_count += chunk_rows
+
+            if chunk_rows > 0:
+                write_silver(transformed, silver_path, predicate)
+
+            log.info(
+                "silver_chunk_written",
+                asset=asset_name,
+                offset=offset,
+                chunk_rows=chunk_rows,
+                total_so_far=row_count,
+            )
+            del chunk_df, transformed
+            gc.collect()
+
     wall_time = round(time.monotonic() - t0, 2)
 
     return MaterializeResult(
@@ -306,6 +347,7 @@ def silver_match_participants(context: AssetExecutionContext) -> MaterializeResu
         context, "silver_match_participants", "match_details_raw", "match_participants",
         transform_match_participants,
         "s.match_id = t.match_id AND s.participant_id = t.participant_id",
+        chunked=True,
     )
 
 
@@ -348,6 +390,7 @@ def silver_match_timeline_frames(context: AssetExecutionContext) -> MaterializeR
         context, "silver_match_timeline_frames", "match_timelines_raw", "match_timeline_frames",
         transform_match_timeline_frames,
         "s.match_id = t.match_id AND s.frame_index = t.frame_index",
+        chunked=True,
     )
 
 
@@ -358,6 +401,7 @@ def silver_match_timeline_participant_frames(context: AssetExecutionContext) -> 
         context, "silver_match_timeline_participant_frames", "match_timelines_raw",
         "match_timeline_participant_frames", transform_match_timeline_participant_frames,
         "s.match_id = t.match_id AND s.frame_index = t.frame_index AND s.participant_id = t.participant_id",
+        chunked=True,
     )
 
 
@@ -368,6 +412,7 @@ def silver_match_timeline_events(context: AssetExecutionContext) -> MaterializeR
         context, "silver_match_timeline_events", "match_timelines_raw", "match_timeline_events",
         transform_match_timeline_events,
         "s.match_id = t.match_id AND s.frame_index = t.frame_index AND s.event_index = t.event_index",
+        chunked=True,
     )
 
 
@@ -402,6 +447,16 @@ def silver_accounts(context: AssetExecutionContext) -> MaterializeResult:
 
 
 # ---------------------------------------------------------------------------
+# Jobs — in-process executor avoids OOM from parallel Silver materializations
+# ---------------------------------------------------------------------------
+
+all_assets_job = define_asset_job(
+    name="all_assets_job",
+    selection="*",
+    executor_def=in_process_executor,
+)
+
+# ---------------------------------------------------------------------------
 # Definitions entrypoint
 # ---------------------------------------------------------------------------
 
@@ -429,4 +484,6 @@ defs = Definitions(
         silver_summoners,
         silver_accounts,
     ],
+    jobs=[all_assets_job],
+    executor=in_process_executor,
 )

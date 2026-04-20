@@ -1,0 +1,5 @@
+2026-04-20 13:39:53 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620878 - LOGS_CAPTURED - Started capturing logs in process (pid: 620878).
+2026-04-20 13:39:53 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620878 - silver_matches - STEP_START - Started execution of step "silver_matches".
+2026-04-20 13:39:56 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620878 - silver_matches - STEP_OUTPUT - Yielded output "result" of type "Any". (Type check passed).
+2026-04-20 13:39:56 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620878 - silver_matches - ASSET_MATERIALIZATION - Materialized value silver_matches.
+2026-04-20 13:39:56 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 620878 - silver_matches - STEP_SUCCESS - Finished execution of step "silver_matches" in 3.33s.

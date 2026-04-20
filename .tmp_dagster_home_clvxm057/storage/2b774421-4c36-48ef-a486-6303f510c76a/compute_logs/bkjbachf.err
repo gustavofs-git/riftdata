@@ -1,0 +1,2 @@
+2026-04-20 14:38:00 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 785600 - LOGS_CAPTURED - Started capturing logs in process (pid: 785600).
+2026-04-20 14:38:00 -0300 - dagster - DEBUG - __ASSET_JOB - 2b774421-4c36-48ef-a486-6303f510c76a - 785600 - silver_match_timeline_events - STEP_START - Started execution of step "silver_match_timeline_events".

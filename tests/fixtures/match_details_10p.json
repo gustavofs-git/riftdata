@@ -1,0 +1,354 @@
+[
+  {
+    "metadata": {
+      "dataVersion": "2",
+      "matchId": "BR1_GOLD001",
+      "participants": [
+        "puuid-g1-p1", "puuid-g1-p2", "puuid-g1-p3", "puuid-g1-p4", "puuid-g1-p5",
+        "puuid-g1-p6", "puuid-g1-p7", "puuid-g1-p8", "puuid-g1-p9", "puuid-g1-p10"
+      ]
+    },
+    "info": {
+      "endOfGameResult": "GameComplete",
+      "gameCreation": 1773941590152,
+      "gameDuration": 1850,
+      "gameEndTimestamp": 1773943440152,
+      "gameId": 9100001,
+      "gameMode": "CLASSIC",
+      "gameName": "teambuilder-match-BR1_GOLD001",
+      "gameStartTimestamp": 1773941590152,
+      "gameType": "MATCHED_GAME",
+      "gameVersion": "16.6.753.8272",
+      "mapId": 11,
+      "platformId": "BR1",
+      "queueId": 420,
+      "tournamentCode": "",
+      "participants": [
+        {
+          "participantId": 1, "teamId": 100, "championId": 86, "championName": "Garen",
+          "championTransform": 0, "kills": 4, "deaths": 2, "assists": 5, "win": true,
+          "puuid": "puuid-g1-p1", "riotIdGameName": "TopLaner1", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-1", "summonerLevel": 150, "summonerName": "TopLaner1",
+          "profileIcon": 100, "role": "SOLO", "lane": "TOP",
+          "individualPosition": "TOP", "teamPosition": "TOP",
+          "goldEarned": 12500, "totalDamageDealtToChampions": 18000,
+          "totalMinionsKilled": 185, "visionScore": 22,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 2, "teamId": 100, "championId": 64, "championName": "LeeSin",
+          "championTransform": 0, "kills": 7, "deaths": 3, "assists": 8, "win": true,
+          "puuid": "puuid-g1-p2", "riotIdGameName": "Jungler1", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-2", "summonerLevel": 200, "summonerName": "Jungler1",
+          "profileIcon": 101, "role": "NONE", "lane": "JUNGLE",
+          "individualPosition": "JUNGLE", "teamPosition": "JUNGLE",
+          "goldEarned": 13200, "totalDamageDealtToChampions": 15000,
+          "totalMinionsKilled": 30, "visionScore": 35,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 3, "teamId": 100, "championId": 103, "championName": "Ahri",
+          "championTransform": 0, "kills": 8, "deaths": 1, "assists": 6, "win": true,
+          "puuid": "puuid-g1-p3", "riotIdGameName": "MidLaner1", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-3", "summonerLevel": 180, "summonerName": "MidLaner1",
+          "profileIcon": 102, "role": "SOLO", "lane": "MID",
+          "individualPosition": "MIDDLE", "teamPosition": "MIDDLE",
+          "goldEarned": 14800, "totalDamageDealtToChampions": 22000,
+          "totalMinionsKilled": 210, "visionScore": 28,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 4, "teamId": 100, "championId": 51, "championName": "Caitlyn",
+          "championTransform": 0, "kills": 6, "deaths": 2, "assists": 7, "win": true,
+          "puuid": "puuid-g1-p4", "riotIdGameName": "ADC1", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-4", "summonerLevel": 160, "summonerName": "ADC1",
+          "profileIcon": 103, "role": "CARRY", "lane": "BOTTOM",
+          "individualPosition": "BOTTOM", "teamPosition": "BOTTOM",
+          "goldEarned": 14200, "totalDamageDealtToChampions": 20000,
+          "totalMinionsKilled": 220, "visionScore": 18,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 5, "teamId": 100, "championId": 412, "championName": "Thresh",
+          "championTransform": 0, "kills": 1, "deaths": 4, "assists": 15, "win": true,
+          "puuid": "puuid-g1-p5", "riotIdGameName": "Support1", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-5", "summonerLevel": 220, "summonerName": "Support1",
+          "profileIcon": 104, "role": "SUPPORT", "lane": "BOTTOM",
+          "individualPosition": "UTILITY", "teamPosition": "UTILITY",
+          "goldEarned": 8500, "totalDamageDealtToChampions": 6000,
+          "totalMinionsKilled": 25, "visionScore": 72,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 6, "teamId": 200, "championId": 24, "championName": "Jax",
+          "championTransform": 0, "kills": 3, "deaths": 5, "assists": 2, "win": false,
+          "puuid": "puuid-g1-p6", "riotIdGameName": "TopLaner2", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-6", "summonerLevel": 140, "summonerName": "TopLaner2",
+          "profileIcon": 105, "role": "SOLO", "lane": "TOP",
+          "individualPosition": "TOP", "teamPosition": "TOP",
+          "goldEarned": 10800, "totalDamageDealtToChampions": 14000,
+          "totalMinionsKilled": 170, "visionScore": 19,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 7, "teamId": 200, "championId": 121, "championName": "Khazix",
+          "championTransform": 0, "kills": 5, "deaths": 6, "assists": 3, "win": false,
+          "puuid": "puuid-g1-p7", "riotIdGameName": "Jungler2", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-7", "summonerLevel": 170, "summonerName": "Jungler2",
+          "profileIcon": 106, "role": "NONE", "lane": "JUNGLE",
+          "individualPosition": "JUNGLE", "teamPosition": "JUNGLE",
+          "goldEarned": 11500, "totalDamageDealtToChampions": 13000,
+          "totalMinionsKilled": 28, "visionScore": 30,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 8, "teamId": 200, "championId": 238, "championName": "Zed",
+          "championTransform": 0, "kills": 4, "deaths": 7, "assists": 1, "win": false,
+          "puuid": "puuid-g1-p8", "riotIdGameName": "MidLaner2", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-8", "summonerLevel": 190, "summonerName": "MidLaner2",
+          "profileIcon": 107, "role": "SOLO", "lane": "MID",
+          "individualPosition": "MIDDLE", "teamPosition": "MIDDLE",
+          "goldEarned": 11000, "totalDamageDealtToChampions": 16000,
+          "totalMinionsKilled": 195, "visionScore": 15,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 9, "teamId": 200, "championId": 67, "championName": "Vayne",
+          "championTransform": 0, "kills": 2, "deaths": 4, "assists": 4, "win": false,
+          "puuid": "puuid-g1-p9", "riotIdGameName": "ADC2", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-9", "summonerLevel": 155, "summonerName": "ADC2",
+          "profileIcon": 108, "role": "CARRY", "lane": "BOTTOM",
+          "individualPosition": "BOTTOM", "teamPosition": "BOTTOM",
+          "goldEarned": 10200, "totalDamageDealtToChampions": 12000,
+          "totalMinionsKilled": 200, "visionScore": 16,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 10, "teamId": 200, "championId": 89, "championName": "Leona",
+          "championTransform": 0, "kills": 0, "deaths": 5, "assists": 8, "win": false,
+          "puuid": "puuid-g1-p10", "riotIdGameName": "Support2", "riotIdTagline": "BR1",
+          "summonerId": "sum-g1-10", "summonerLevel": 210, "summonerName": "Support2",
+          "profileIcon": 109, "role": "SUPPORT", "lane": "BOTTOM",
+          "individualPosition": "UTILITY", "teamPosition": "UTILITY",
+          "goldEarned": 7200, "totalDamageDealtToChampions": 5000,
+          "totalMinionsKilled": 20, "visionScore": 65,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        }
+      ],
+      "teams": [
+        {
+          "teamId": 100, "win": true,
+          "bans": [
+            {"championId": 157, "pickTurn": 1}, {"championId": 92, "pickTurn": 2},
+            {"championId": 555, "pickTurn": 3}, {"championId": 234, "pickTurn": 4},
+            {"championId": 145, "pickTurn": 5}
+          ],
+          "objectives": {
+            "baron": {"first": true, "kills": 1}, "champion": {"first": true, "kills": 26},
+            "dragon": {"first": true, "kills": 3}, "inhibitor": {"first": true, "kills": 1},
+            "riftHerald": {"first": true, "kills": 1}, "tower": {"first": true, "kills": 8}
+          }
+        },
+        {
+          "teamId": 200, "win": false,
+          "bans": [
+            {"championId": 7, "pickTurn": 6}, {"championId": 84, "pickTurn": 7},
+            {"championId": 236, "pickTurn": 8}, {"championId": 39, "pickTurn": 9},
+            {"championId": 55, "pickTurn": 10}
+          ],
+          "objectives": {
+            "baron": {"first": false, "kills": 0}, "champion": {"first": false, "kills": 14},
+            "dragon": {"first": false, "kills": 1}, "inhibitor": {"first": false, "kills": 0},
+            "riftHerald": {"first": false, "kills": 0}, "tower": {"first": false, "kills": 3}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "metadata": {
+      "dataVersion": "2",
+      "matchId": "BR1_GOLD002",
+      "participants": [
+        "puuid-g2-p1", "puuid-g2-p2", "puuid-g2-p3", "puuid-g2-p4", "puuid-g2-p5",
+        "puuid-g2-p6", "puuid-g2-p7", "puuid-g2-p8", "puuid-g2-p9", "puuid-g2-p10"
+      ]
+    },
+    "info": {
+      "endOfGameResult": "GameComplete",
+      "gameCreation": 1773951590152,
+      "gameDuration": 2200,
+      "gameEndTimestamp": 1773953790152,
+      "gameId": 9100002,
+      "gameMode": "CLASSIC",
+      "gameName": "teambuilder-match-BR1_GOLD002",
+      "gameStartTimestamp": 1773951590152,
+      "gameType": "MATCHED_GAME",
+      "gameVersion": "16.6.753.8272",
+      "mapId": 11,
+      "platformId": "BR1",
+      "queueId": 420,
+      "tournamentCode": "",
+      "participants": [
+        {
+          "participantId": 1, "teamId": 100, "championId": 58, "championName": "Renekton",
+          "championTransform": 0, "kills": 3, "deaths": 6, "assists": 4, "win": false,
+          "puuid": "puuid-g2-p1", "riotIdGameName": "TopA", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-1", "summonerLevel": 130, "summonerName": "TopA",
+          "profileIcon": 200, "role": "SOLO", "lane": "TOP",
+          "individualPosition": "TOP", "teamPosition": "TOP",
+          "goldEarned": 11000, "totalDamageDealtToChampions": 15000,
+          "totalMinionsKilled": 175, "visionScore": 20,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 2, "teamId": 100, "championId": 254, "championName": "Vi",
+          "championTransform": 0, "kills": 5, "deaths": 5, "assists": 6, "win": false,
+          "puuid": "puuid-g2-p2", "riotIdGameName": "JglA", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-2", "summonerLevel": 190, "summonerName": "JglA",
+          "profileIcon": 201, "role": "NONE", "lane": "JUNGLE",
+          "individualPosition": "JUNGLE", "teamPosition": "JUNGLE",
+          "goldEarned": 12000, "totalDamageDealtToChampions": 14000,
+          "totalMinionsKilled": 35, "visionScore": 32,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 3, "teamId": 100, "championId": 134, "championName": "Syndra",
+          "championTransform": 0, "kills": 6, "deaths": 4, "assists": 3, "win": false,
+          "puuid": "puuid-g2-p3", "riotIdGameName": "MidA", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-3", "summonerLevel": 175, "summonerName": "MidA",
+          "profileIcon": 202, "role": "SOLO", "lane": "MID",
+          "individualPosition": "MIDDLE", "teamPosition": "MIDDLE",
+          "goldEarned": 13500, "totalDamageDealtToChampions": 21000,
+          "totalMinionsKilled": 200, "visionScore": 25,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 4, "teamId": 100, "championId": 222, "championName": "Jinx",
+          "championTransform": 0, "kills": 4, "deaths": 5, "assists": 5, "win": false,
+          "puuid": "puuid-g2-p4", "riotIdGameName": "BotA", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-4", "summonerLevel": 145, "summonerName": "BotA",
+          "profileIcon": 203, "role": "CARRY", "lane": "BOTTOM",
+          "individualPosition": "BOTTOM", "teamPosition": "BOTTOM",
+          "goldEarned": 12800, "totalDamageDealtToChampions": 19000,
+          "totalMinionsKilled": 215, "visionScore": 17,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 5, "teamId": 100, "championId": 267, "championName": "Nami",
+          "championTransform": 0, "kills": 1, "deaths": 6, "assists": 12, "win": false,
+          "puuid": "puuid-g2-p5", "riotIdGameName": "SupA", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-5", "summonerLevel": 200, "summonerName": "SupA",
+          "profileIcon": 204, "role": "SUPPORT", "lane": "BOTTOM",
+          "individualPosition": "UTILITY", "teamPosition": "UTILITY",
+          "goldEarned": 7800, "totalDamageDealtToChampions": 5500,
+          "totalMinionsKilled": 22, "visionScore": 68,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 6, "teamId": 200, "championId": 150, "championName": "Gnar",
+          "championTransform": 0, "kills": 5, "deaths": 3, "assists": 7, "win": true,
+          "puuid": "puuid-g2-p6", "riotIdGameName": "TopB", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-6", "summonerLevel": 160, "summonerName": "TopB",
+          "profileIcon": 205, "role": "SOLO", "lane": "TOP",
+          "individualPosition": "TOP", "teamPosition": "TOP",
+          "goldEarned": 13800, "totalDamageDealtToChampions": 17000,
+          "totalMinionsKilled": 190, "visionScore": 24,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 7, "teamId": 200, "championId": 76, "championName": "Nidalee",
+          "championTransform": 0, "kills": 6, "deaths": 4, "assists": 9, "win": true,
+          "puuid": "puuid-g2-p7", "riotIdGameName": "JglB", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-7", "summonerLevel": 185, "summonerName": "JglB",
+          "profileIcon": 206, "role": "NONE", "lane": "JUNGLE",
+          "individualPosition": "JUNGLE", "teamPosition": "JUNGLE",
+          "goldEarned": 13000, "totalDamageDealtToChampions": 14500,
+          "totalMinionsKilled": 32, "visionScore": 38,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 8, "teamId": 200, "championId": 7, "championName": "Leblanc",
+          "championTransform": 0, "kills": 9, "deaths": 3, "assists": 5, "win": true,
+          "puuid": "puuid-g2-p8", "riotIdGameName": "MidB", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-8", "summonerLevel": 210, "summonerName": "MidB",
+          "profileIcon": 207, "role": "SOLO", "lane": "MID",
+          "individualPosition": "MIDDLE", "teamPosition": "MIDDLE",
+          "goldEarned": 15200, "totalDamageDealtToChampions": 24000,
+          "totalMinionsKilled": 205, "visionScore": 20,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 9, "teamId": 200, "championId": 81, "championName": "Ezreal",
+          "championTransform": 0, "kills": 7, "deaths": 5, "assists": 6, "win": true,
+          "puuid": "puuid-g2-p9", "riotIdGameName": "BotB", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-9", "summonerLevel": 170, "summonerName": "BotB",
+          "profileIcon": 208, "role": "CARRY", "lane": "BOTTOM",
+          "individualPosition": "BOTTOM", "teamPosition": "BOTTOM",
+          "goldEarned": 14500, "totalDamageDealtToChampions": 21000,
+          "totalMinionsKilled": 225, "visionScore": 19,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        },
+        {
+          "participantId": 10, "teamId": 200, "championId": 497, "championName": "Rakan",
+          "championTransform": 0, "kills": 2, "deaths": 4, "assists": 14, "win": true,
+          "puuid": "puuid-g2-p10", "riotIdGameName": "SupB", "riotIdTagline": "BR1",
+          "summonerId": "sum-g2-10", "summonerLevel": 195, "summonerName": "SupB",
+          "profileIcon": 209, "role": "SUPPORT", "lane": "BOTTOM",
+          "individualPosition": "UTILITY", "teamPosition": "UTILITY",
+          "goldEarned": 8000, "totalDamageDealtToChampions": 6500,
+          "totalMinionsKilled": 18, "visionScore": 70,
+          "challenges": {}, "perks": {"statPerks": {"defense": 5001, "flex": 5008, "offense": 5005}, "styles": []},
+          "missions": {}, "PlayerBehavior": {}
+        }
+      ],
+      "teams": [
+        {
+          "teamId": 100, "win": false,
+          "bans": [
+            {"championId": 64, "pickTurn": 1}, {"championId": 412, "pickTurn": 2},
+            {"championId": 103, "pickTurn": 3}, {"championId": 86, "pickTurn": 4},
+            {"championId": 51, "pickTurn": 5}
+          ],
+          "objectives": {
+            "baron": {"first": false, "kills": 0}, "champion": {"first": false, "kills": 19},
+            "dragon": {"first": true, "kills": 2}, "inhibitor": {"first": false, "kills": 0},
+            "riftHerald": {"first": false, "kills": 0}, "tower": {"first": false, "kills": 4}
+          }
+        },
+        {
+          "teamId": 200, "win": true,
+          "bans": [
+            {"championId": 58, "pickTurn": 6}, {"championId": 254, "pickTurn": 7},
+            {"championId": 134, "pickTurn": 8}, {"championId": 222, "pickTurn": 9},
+            {"championId": 267, "pickTurn": 10}
+          ],
+          "objectives": {
+            "baron": {"first": true, "kills": 2}, "champion": {"first": true, "kills": 29},
+            "dragon": {"first": false, "kills": 3}, "inhibitor": {"first": true, "kills": 2},
+            "riftHerald": {"first": true, "kills": 1}, "tower": {"first": true, "kills": 9}
+          }
+        }
+      ]
+    }
+  }
+]

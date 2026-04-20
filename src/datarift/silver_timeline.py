@@ -55,7 +55,7 @@ def transform_match_timeline_participant_frames(df: pl.DataFrame) -> pl.DataFram
         doc = json.loads(raw)
         match_id = doc["metadata"]["matchId"]
         for frame_index, frame in enumerate(doc["info"]["frames"]):
-            participant_frames = frame.get("participantFrames", {})
+            participant_frames = frame.get("participantFrames") or {}
             for key, pf in participant_frames.items():
                 row: dict = {
                     "match_id": match_id,

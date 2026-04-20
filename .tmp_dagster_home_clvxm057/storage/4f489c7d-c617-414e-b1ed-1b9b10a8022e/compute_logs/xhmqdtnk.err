@@ -1,0 +1,2 @@
+2026-04-20 15:01:34 -0300 - dagster - DEBUG - __ASSET_JOB - 4f489c7d-c617-414e-b1ed-1b9b10a8022e - 854051 - LOGS_CAPTURED - Started capturing logs in process (pid: 854051).
+2026-04-20 15:01:34 -0300 - dagster - DEBUG - __ASSET_JOB - 4f489c7d-c617-414e-b1ed-1b9b10a8022e - 854051 - silver_match_timeline_events - STEP_START - Started execution of step "silver_match_timeline_events".
