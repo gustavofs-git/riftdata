@@ -1,4 +1,4 @@
-"""Unit tests for Gold matchup_detail transform."""
+"""Unit tests for Gold matchup_detail and matchup_intervals transforms."""
 
 from __future__ import annotations
 
@@ -8,10 +8,15 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from datarift.gold_matchup import transform_matchup_detail
+from datarift.gold_matchup import transform_matchup_detail, transform_matchup_intervals
 from datarift.silver_match import transform_match_participants
+from datarift.silver_timeline import (
+    transform_match_timeline_frames,
+    transform_match_timeline_participant_frames,
+)
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "match_details_10p.json"
+TIMELINE_FIXTURE_PATH = Path(__file__).parent / "fixtures" / "match_timelines.json"
 
 
 @pytest.fixture()
@@ -88,3 +93,142 @@ def test_matchup_detail_empty_input() -> None:
     empty_df = pl.DataFrame()
     result = transform_matchup_detail(empty_df)
     assert len(result) == 0
+
+
+# ---------------------------------------------------------------------------
+# Fixtures for matchup_intervals tests
+# ---------------------------------------------------------------------------
+
+
+def _build_bronze_df(fixture_path: Path) -> pl.DataFrame:
+    raw = json.loads(fixture_path.read_text())
+    return pl.DataFrame([{"raw_json": json.dumps(m)} for m in raw])
+
+
+@pytest.fixture()
+def interval_result(silver_participants: pl.DataFrame) -> pl.DataFrame:
+    timeline_bronze = _build_bronze_df(TIMELINE_FIXTURE_PATH)
+    timeline_frames = transform_match_timeline_frames(timeline_bronze)
+    participant_frames = transform_match_timeline_participant_frames(timeline_bronze)
+    matchup_detail = transform_matchup_detail(silver_participants)
+    return transform_matchup_intervals(
+        matchup_detail, silver_participants, timeline_frames, participant_frames,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Matchup intervals tests
+# ---------------------------------------------------------------------------
+
+
+def test_matchup_intervals_row_count(interval_result: pl.DataFrame) -> None:
+    assert len(interval_result) == 40, (
+        f"Expected 40 rows (2 matches × 5 lanes × 4 intervals), got {len(interval_result)}"
+    )
+
+
+def test_matchup_intervals_columns(interval_result: pl.DataFrame) -> None:
+    expected = {
+        "match_id", "champion_a_id", "champion_a_name",
+        "champion_b_id", "champion_b_name", "lane", "interval_min",
+        "total_gold_a", "total_gold_b", "xp_a", "xp_b",
+        "level_a", "level_b", "minions_killed_a", "minions_killed_b",
+        "jungle_minions_killed_a", "jungle_minions_killed_b",
+        "current_gold_a", "current_gold_b",
+    }
+    assert expected == set(interval_result.columns), (
+        f"Column mismatch: missing={expected - set(interval_result.columns)}, "
+        f"extra={set(interval_result.columns) - expected}"
+    )
+
+
+def test_matchup_intervals_interval_values(interval_result: pl.DataFrame) -> None:
+    values = set(interval_result["interval_min"].unique().to_list())
+    assert values == {5, 10, 15, 20}
+
+
+def test_matchup_intervals_stats_monotonic(interval_result: pl.DataFrame) -> None:
+    row = interval_result.filter(
+        (pl.col("match_id") == "BR1_GOLD001") & (pl.col("lane") == "TOP")
+    ).sort("interval_min")
+    golds = row["total_gold_a"].to_list()
+    for i in range(1, len(golds)):
+        assert golds[i] > golds[i - 1], (
+            f"total_gold_a not monotonic at intervals {i-1}→{i}: {golds}"
+        )
+
+
+def test_matchup_intervals_team_ordering(interval_result: pl.DataFrame) -> None:
+    row = interval_result.filter(
+        (pl.col("match_id") == "BR1_GOLD001")
+        & (pl.col("lane") == "TOP")
+        & (pl.col("interval_min") == 5)
+    ).to_dicts()[0]
+    assert row["champion_a_name"] == "Garen"
+    assert row["champion_b_name"] == "Jax"
+
+
+def test_matchup_intervals_short_game_nulls() -> None:
+    matchup_detail = pl.DataFrame({
+        "match_id": ["SHORT1"] * 5,
+        "champion_a_id": [1, 2, 3, 4, 5],
+        "champion_a_name": ["A1", "A2", "A3", "A4", "A5"],
+        "champion_b_id": [6, 7, 8, 9, 10],
+        "champion_b_name": ["B1", "B2", "B3", "B4", "B5"],
+        "lane": ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"],
+    })
+    participants = pl.DataFrame({
+        "match_id": ["SHORT1"] * 10,
+        "participant_id": list(range(1, 11)),
+        "champion_id": list(range(1, 11)),
+        "team_id": [100]*5 + [200]*5,
+    })
+    frames_per_min = 11  # 0-10 min only
+    timeline_frames = pl.DataFrame({
+        "match_id": ["SHORT1"] * frames_per_min,
+        "frame_index": list(range(frames_per_min)),
+        "timestamp": [i * 60000 for i in range(frames_per_min)],
+    })
+    pf_rows = []
+    for fi in range(frames_per_min):
+        for pid in range(1, 11):
+            pf_rows.append({
+                "match_id": "SHORT1",
+                "frame_index": fi,
+                "participant_id": pid,
+                "total_gold": 500 + fi * 200,
+                "xp": fi * 150,
+                "level": min(1 + fi // 3, 18),
+                "minions_killed": fi * 6,
+                "jungle_minions_killed": fi * 2 if pid in [2, 7] else 0,
+                "current_gold": int((500 + fi * 200) * 0.6),
+            })
+    participant_frames = pl.DataFrame(pf_rows)
+
+    result = transform_matchup_intervals(
+        matchup_detail, participants, timeline_frames, participant_frames,
+    )
+    assert len(result) == 20  # 5 lanes × 4 intervals
+    at_15 = result.filter(pl.col("interval_min") == 15)
+    assert at_15["total_gold_a"].is_null().all()
+    at_20 = result.filter(pl.col("interval_min") == 20)
+    assert at_20["total_gold_a"].is_null().all()
+    at_5 = result.filter(pl.col("interval_min") == 5)
+    assert at_5["total_gold_a"].is_not_null().all()
+
+
+def test_matchup_intervals_empty_input() -> None:
+    empty = pl.DataFrame()
+    participants = pl.DataFrame()
+    frames = pl.DataFrame()
+    pf = pl.DataFrame()
+    result = transform_matchup_intervals(empty, participants, frames, pf)
+    assert len(result) == 0
+    assert set(result.columns) == {
+        "match_id", "champion_a_id", "champion_a_name",
+        "champion_b_id", "champion_b_name", "lane", "interval_min",
+        "total_gold_a", "total_gold_b", "xp_a", "xp_b",
+        "level_a", "level_b", "minions_killed_a", "minions_killed_b",
+        "jungle_minions_killed_a", "jungle_minions_killed_b",
+        "current_gold_a", "current_gold_b",
+    }
