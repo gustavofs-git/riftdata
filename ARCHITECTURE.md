@@ -2,22 +2,22 @@
 
 ## Overview
 
-DataRift is a **League of Legends ranked data pipeline** that extracts player and match data from the Riot Games API, stores it as raw JSON in a Bronze layer, then transforms it into typed relational tables in a Silver layer. All storage uses **Delta Lake** (Parquet + transaction log) for ACID writes, schema enforcement, and idempotent MERGE operations.
+DataRift is a **League of Legends ranked data pipeline** that extracts player and match data from the Riot Games API, stores it as raw JSON in a Bronze layer, transforms it into typed relational tables in a Silver layer, and aggregates champion-vs-champion matchup statistics in a Gold layer. All storage uses **Delta Lake** (Parquet + transaction log) for ACID writes, schema enforcement, and idempotent MERGE operations. Gold tables can be exported to **Postgres** for serving.
 
-Orchestration is handled by **Dagster**, which manages dependencies between assets, provides a web UI for materialization, and supports individual asset retries.
+Orchestration is handled by **Dagster**, which manages dependencies between 20 assets, provides a web UI for materialization, and supports individual asset retries.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Dagster Orchestrator                         │
-│                    (definitions.py — 17 assets)                      │
+│                    (definitions.py — 20 assets)                      │
 └────────────────────────────┬────────────────────────────────────────┘
                              │
           ┌──────────────────┼──────────────────┐
           ▼                  ▼                  ▼
    ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
    │   Bronze    │   │   Bronze    │   │   Bronze    │
-   │  Extraction │   │  Extraction │   │  Extraction │
-   │ (6 assets)  │   │  (async)    │   │ (rate-ltd)  │
+   │  Extraction │   │  (async)    │   │ (rate-ltd)  │
+   │ (6 assets)  │   │             │   │             │
    └──────┬──────┘   └──────┬──────┘   └──────┬──────┘
           │                  │                  │
           ▼                  ▼                  ▼
@@ -44,6 +44,28 @@ Orchestration is handled by **Dagster**, which manages dependencies between asse
    │  match_timeline_participant_frames,            │
    │  match_timeline_events, league_entries,        │
    │  summoners, accounts                           │
+   └────────────────────────┬───────────────────────┘
+                            │
+                            ▼
+   ┌────────────────────────────────────────────────┐
+   │          Gold Transforms (3 assets)            │
+   │  Champion-vs-champion matchup aggregation,     │
+   │  nearest-frame interval snapshots, win rates   │
+   └────────────────────────┬───────────────────────┘
+                            │
+                            ▼
+   ┌────────────────────────────────────────────────┐
+   │            data/gold/ (Delta Lake)              │
+   │  3 tables: matchup_detail,                     │
+   │  matchup_intervals, matchup_aggregates         │
+   └────────────────────────┬───────────────────────┘
+                            │
+                            ▼ (optional)
+   ┌────────────────────────────────────────────────┐
+   │          Postgres (serving layer)              │
+   │  COPY FROM STDIN bulk export via psycopg3      │
+   │  gold.matchup_detail, gold.matchup_intervals,  │
+   │  gold.matchup_aggregates                       │
    └────────────────────────────────────────────────┘
 ```
 
@@ -81,13 +103,13 @@ primary_key (Utf8) | raw_json (Utf8) | ingested_at (Timestamp) | endpoint (Utf8)
 | Table | Source Bronze | Rows | Grain |
 |-------|-------------|------|-------|
 | `matches` | match_details_raw | 3,389 | 1 per match |
-| `match_participants` | match_details_raw | 34,260 | 1 per match × participant (10/match) |
-| `match_teams` | match_details_raw | 6,774 | 1 per match × team (2/match) |
-| `match_teams_bans` | match_details_raw | 34,050 | 1 per match × team × ban |
-| `match_teams_objectives` | match_details_raw | 54,192 | 1 per match × team × objective type |
-| `match_timeline_frames` | match_timelines_raw | 90,086 | 1 per match × frame (~26/match) |
-| `match_timeline_participant_frames` | match_timelines_raw | 911,232 | 1 per match × frame × participant |
-| `match_timeline_events` | match_timelines_raw | 3,829,352 | 1 per match × frame × event |
+| `match_participants` | match_details_raw | 34,260 | 1 per match x participant (10/match) |
+| `match_teams` | match_details_raw | 6,774 | 1 per match x team (2/match) |
+| `match_teams_bans` | match_details_raw | 34,050 | 1 per match x team x ban |
+| `match_teams_objectives` | match_details_raw | 54,192 | 1 per match x team x objective type |
+| `match_timeline_frames` | match_timelines_raw | 90,086 | 1 per match x frame (~26/match) |
+| `match_timeline_participant_frames` | match_timelines_raw | 911,232 | 1 per match x frame x participant |
+| `match_timeline_events` | match_timelines_raw | 3,829,352 | 1 per match x frame x event |
 | `league_entries` | league_entries_raw | 300 | 1 per puuid |
 | `summoners` | summoners_raw | 300 | 1 per puuid |
 | `accounts` | accounts_raw | 300 | 1 per puuid |
@@ -98,7 +120,23 @@ primary_key (Utf8) | raw_json (Utf8) | ingested_at (Timestamp) | endpoint (Utf8)
 - **Transform patterns:**
   - Simple scalars: `json_path_match("$.path") + .cast()` (native Polars, zero Python overhead)
   - Arrays/nested: `json.loads()` + Python dict traversal + DataFrame construction (when JSONPath can't explode arrays)
-  - Booleans: String equality comparison (`== "true"`) since Polars 1.39 can't cast Utf8→Boolean directly
+  - Booleans: String equality comparison (`== "true"`) since Polars 1.39 can't cast Utf8->Boolean directly
+
+### Gold (Matchup Analytics)
+
+**Purpose:** Pre-aggregate champion-vs-champion matchup statistics for analytics and serving.
+
+| Table | Source | Rows | Grain |
+|-------|--------|------|-------|
+| `matchup_detail` | Silver match_participants | ~16k | 1 per match x lane |
+| `matchup_intervals` | Gold matchup_detail + Silver timeline frames | ~64k | 1 per match x lane x interval (5/10/15/20 min) |
+| `matchup_aggregates` | Gold matchup_detail + matchup_intervals + Silver league_entries | ~100k | 1 per champion pair x lane x interval x patch x tier |
+
+**Key design choices:**
+- **Full recompute:** Gold tables use `write_gold()` with Delta overwrite mode (no MERGE). The entire table is rebuilt on each materialization.
+- **Self-join matchup pairing:** `transform_matchup_detail()` self-joins participants on opposite teams and same lane to produce A-vs-B rows. Champion A is always from team 100, B from team 200.
+- **Nearest-frame lookup:** `transform_matchup_intervals()` cross-joins matchup rows with target interval timestamps (5/10/15/20 min), finds the closest timeline frame by absolute distance, and applies a max-distance threshold (NULLs for short games that end before a given interval).
+- **Postgres export:** `scripts/export_to_postgres.py` bulk-loads Gold tables into Postgres via `psycopg3` COPY FROM STDIN with CSV format and dynamic column ordering.
 
 ---
 
@@ -106,18 +144,27 @@ primary_key (Utf8) | raw_json (Utf8) | ingested_at (Timestamp) | endpoint (Utf8)
 
 ```
 bronze_league_entries (root)
-├── bronze_accounts ──────────────── → silver_accounts
-├── bronze_summoners ─────────────── → silver_summoners
+├── bronze_accounts ──────────────── -> silver_accounts
+├── bronze_summoners ─────────────── -> silver_summoners
 ├── bronze_match_ids
-│   ├── bronze_match_details ─────── → silver_matches
-│   │                                  silver_match_participants (chunked)
-│   │                                  silver_match_teams
-│   │                                  silver_match_teams_bans
-│   │                                  silver_match_teams_objectives
-│   └── bronze_match_timelines ───── → silver_match_timeline_frames (chunked)
-│                                      silver_match_timeline_participant_frames (chunked)
-│                                      silver_match_timeline_events (chunked)
-└── silver_league_entries
+│   ├── bronze_match_details ─────── -> silver_matches
+│   │                                   silver_match_participants ──┐
+│   │                                   silver_match_teams          │
+│   │                                   silver_match_teams_bans     │
+│   │                                   silver_match_teams_objectives│
+│   └── bronze_match_timelines ───── -> silver_match_timeline_frames ──┐
+│                                       silver_match_timeline_participant_frames
+│                                       silver_match_timeline_events
+├── silver_league_entries ──────────────────────────────────────────────┐
+│                                                                      │
+│                              ┌── gold_matchup_detail ◄───────────────┤
+│                              │         │                             │
+│                              │   gold_matchup_intervals              │
+│                              │         │                             │
+│                              └── gold_matchup_aggregates ◄───────────┘
+│                                        │
+│                                        ▼ (optional)
+│                                   Postgres export
 ```
 
 ---
@@ -133,8 +180,19 @@ bronze_league_entries (root)
 | `silver_match.py` | Match-detail transforms + `write_silver()` Delta MERGE helper |
 | `silver_timeline.py` | Timeline transforms (frames, participant_frames, events) |
 | `silver_league.py` | League/summoner/account transforms |
+| `gold_matchup.py` | Gold matchup transforms (detail, intervals, aggregates) + `write_gold()` |
 | `logging.py` | structlog configuration per asset invocation |
-| `definitions.py` | Dagster asset definitions, `_materialize_silver()` helper, job config |
+| `definitions.py` | Dagster asset definitions (20 assets), `_materialize_silver()` helper, job config |
+
+---
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/smoke.py` | Seeds Bronze from fixtures, runs Silver + Gold transforms, verifies row counts |
+| `scripts/export_to_postgres.py` | Applies `sql/gold_schema.sql` DDL and bulk-loads Gold Delta tables into Postgres |
+| `scripts/validate_gold.py` | DuckDB cross-validation asserting Gold aggregates match Silver source data |
 
 ---
 
@@ -167,11 +225,13 @@ The pipeline is designed to run on constrained hardware (8GB RAM VPS target):
 
 ## Data Flow (end-to-end for a single match)
 
-1. **League entries** → get puuids of CHALLENGER players in KR
-2. **Match IDs** → for each puuid, fetch recent ranked match IDs
-3. **Match details** → for each unique match_id, fetch full match JSON (~50KB)
-4. **Match timelines** → for each match_id, fetch frame-by-frame timeline (~130KB)
-5. **Silver transforms** → parse each raw JSON into 11 typed tables
+1. **League entries** -> get puuids of CHALLENGER players in KR
+2. **Match IDs** -> for each puuid, fetch recent ranked match IDs
+3. **Match details** -> for each unique match_id, fetch full match JSON (~50KB)
+4. **Match timelines** -> for each match_id, fetch frame-by-frame timeline (~130KB)
+5. **Silver transforms** -> parse each raw JSON into 11 typed tables
+6. **Gold transforms** -> self-join participants into matchup pairs, compute interval snapshots and aggregate statistics
+7. **Postgres export** (optional) -> bulk-load Gold tables for serving
 
 ---
 
@@ -182,25 +242,25 @@ The pipeline is designed to run on constrained hardware (8GB RAM VPS target):
 dagster dev -m datarift.definitions
 
 # Materialize everything
-# In the Dagster UI: select all assets → Materialize
+# In the Dagster UI: select all assets -> Materialize
 
 # Or via CLI
 dagster asset materialize --select '*' -m datarift.definitions
+
+# Export Gold to Postgres (requires running Postgres)
+docker compose up -d postgres
+python scripts/export_to_postgres.py
 ```
 
 **Environment variables:**
 - `RIOT_API_KEY` — Required. Riot Games API key.
 - `DAGSTER_HOME` — Optional. Defaults to temp directory.
+- `PG_URL` — Optional. Postgres connection string (default: `postgresql://datarift:datarift@localhost:5432/datarift`).
 
 ---
 
 ## Production Deployment (2 vCPU / 8GB RAM / 100GB NVMe)
 
-The current dataset (Bronze + Silver) occupies ~550MB on disk. The chunked Silver processing peaks at ~2GB total memory (OS + Dagster + transform batch + Arrow overhead). The VPS has comfortable headroom.
+The current dataset (Bronze + Silver + Gold) occupies ~550MB on disk. The chunked Silver processing peaks at ~2GB total memory (OS + Dagster + transform batch + Arrow overhead). The VPS has comfortable headroom.
 
 **Bottleneck:** CPU-bound `json.loads()` loops on 2 vCPUs. Timeline Silver processing takes ~10-15 minutes for 3,389 matches. Not a problem — just slower than a workstation.
-
-**Scaling concern:** If the dataset grows 10x (30k+ matches), consider:
-- Reducing `silver_batch_size` to 50
-- Partitioning timeline tables by match_id range
-- Adding a Gold layer for pre-aggregated analytics
