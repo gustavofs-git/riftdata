@@ -1,0 +1,2 @@
+{"event": "Exception during reset or similar", "exc_info": ["<class 'sqlite3.ProgrammingError'>", "ProgrammingError('Cannot operate on a closed database.')", "<traceback object at 0x757a01594100>"]}
+{"event": "Exception during reset or similar", "exc_info": ["<class 'sqlite3.ProgrammingError'>", "ProgrammingError('Cannot operate on a closed database.')", "<traceback object at 0x757a01527dc0>"]}

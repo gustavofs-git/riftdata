@@ -1,0 +1,9 @@
+{"event": "Context impl SQLiteImpl."}
+{"event": "Will assume non-transactional DDL."}
+{"event": "Exception during reset or similar", "exc_info": ["<class 'sqlite3.ProgrammingError'>", "ProgrammingError('Cannot operate on a closed database.')", "<traceback object at 0x757a014ed0c0>"]}
+{"event": "Running stamp_revision  -> 29b539ebc72a"}
+{"event": "new branch insert 29b539ebc72a"}
+{"event": "Context impl SQLiteImpl."}
+{"event": "Will assume non-transactional DDL."}
+{"event": "Running stamp_revision  -> 29b539ebc72a"}
+{"event": "new branch insert 29b539ebc72a"}

@@ -1,0 +1,9 @@
+{"event": "Using selector: EpollSelector"}
+{"event": "Context impl SQLiteImpl."}
+{"event": "Will assume non-transactional DDL."}
+{"event": "Running stamp_revision  -> 29b539ebc72a"}
+{"event": "new branch insert 29b539ebc72a"}
+{"event": "Context impl SQLiteImpl."}
+{"event": "Will assume non-transactional DDL."}
+{"event": "Running stamp_revision  -> 29b539ebc72a"}
+{"event": "new branch insert 29b539ebc72a"}
